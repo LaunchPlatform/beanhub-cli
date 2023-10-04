@@ -526,4 +526,4 @@ server = ["fastapi", "jinja2"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "b37de83a11a5bff42061ea56c4f6e54d1f16331c589338e1ea0c3372f81c7a4e"
+content-hash = "d95df90b0368fa52c566beeae68d70bd7cad3a55318bc41a60c942d165b0f2c2"
