@@ -6,7 +6,15 @@ from .cli import cli
 
 
 @cli.command()
-@click.option("--port", default=8080, help="Port number for serving the forms web app.")
-def server(port: int):
+@click.option(
+    "-p", "--port", default=8080, help="Port number for serving the forms web app."
+)
+@click.option(
+    "-h", "--host", default="127.0.0.1", help="Host for serving the forms web app."
+)
+@click.option(
+    "--uvicorn-log-level", default="info", help="Log level for Uvicorn web server."
+)
+def server(port: int, host: str, uvicorn_log_level: str):
     app = make_app()
-    uvicorn.run(app, port=port, log_level="info")
+    uvicorn.run(app, port=port, host=host, log_level=uvicorn_log_level)
