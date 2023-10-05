@@ -54,6 +54,12 @@ def create_backup(src: pathlib.Path, suffix: str) -> pathlib.Path:
     help="Read beancount file data from stdin and output result to stdout",
 )
 @click.option(
+    "-i",
+    "--follow-include",
+    is_flag=True,
+    help="Follow include statements and also format the included bean files",
+)
+@click.option(
     "-l",
     "--log-level",
     type=click.Choice(list(LOG_LEVEL_MAP), case_sensitive=False),
@@ -64,6 +70,7 @@ def main(
     filename: typing.List[click.Path],
     backup_suffix: str,
     log_level: str,
+    follow_include: bool,
     stdin_mode: bool,
     backup: bool,
 ):
@@ -77,6 +84,9 @@ def main(
         tree = parser.parse(input_content)
         formatter.format(tree, sys.stdout)
     else:
+        if not filename:
+            # TODO: look up all beancount files, or just main?
+            pass
         for name in filename:
             logger.info("Processing file %s", name)
             with open(name, "rt") as input_file:
