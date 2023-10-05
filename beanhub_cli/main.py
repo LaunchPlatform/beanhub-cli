@@ -1,5 +1,5 @@
-import click
+from .cli import cli
+from .forms import main
 
-@click.command()
-def main():
-    pass
+if __name__ == "__main__":
+    cli()

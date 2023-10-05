@@ -3,6 +3,7 @@ import typing
 import urllib.parse
 
 import yaml
+from beanhub_forms.data_types.form import FormDoc
 from fastapi import Depends
 from pydantic import parse_obj_as
 from starlette.requests import Request
@@ -10,7 +11,6 @@ from starlette.templating import Jinja2Templates
 from starlette_wtf.csrf import csrf_token
 
 from . import constants
-from ..data_types.form import FormDoc
 from .settings import settings
 
 

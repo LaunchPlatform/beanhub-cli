@@ -7,20 +7,10 @@ import tempfile
 import typing
 
 import click
+from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
 
-from beancount_black.formatter import Formatter
-from beancount_black.formatter import VERBOSE_LOG_LEVEL
-
-
-LOG_LEVEL_MAP = {
-    "verbose": VERBOSE_LOG_LEVEL,
-    "debug": logging.DEBUG,
-    "info": logging.INFO,
-    "warning": logging.WARNING,
-    "error": logging.ERROR,
-    "fatal": logging.FATAL,
-}
+from beanhub_cli.cli import LOG_LEVEL_MAP
 
 
 def create_backup(src: pathlib.Path, suffix: str) -> pathlib.Path:
@@ -58,12 +48,6 @@ def create_backup(src: pathlib.Path, suffix: str) -> pathlib.Path:
     "--follow-include",
     is_flag=True,
     help="Follow include statements and also format the included bean files",
-)
-@click.option(
-    "-l",
-    "--log-level",
-    type=click.Choice(list(LOG_LEVEL_MAP), case_sensitive=False),
-    default=lambda: os.environ.get("LOG_LEVEL", "INFO"),
 )
 @click.option("-b", "--backup", is_flag=True, help="Create backup file")
 def main(

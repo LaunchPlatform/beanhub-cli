@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "beancount-cli"
+name = "beanhub-cli"
 version = "0.1.0"
 description = "Command line tools for BeanHub"
 authors = ["Fang-Pen Lin <fangpen@launchplatform.com>"]
@@ -7,16 +7,19 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pydantic = "^1.10.0"
+pydantic = "^2.4.0"
 starlette-wtf = "^0.4.3"
 fastapi = ">= 0.98.0, <1.0.0"
 jinja2 = ">=3.1.2, <4.0.0"
 pyyaml = "^6.0.1"
 beancount-black = "^0.2.1"
 click = "^8.1.7"
+uvicorn = "^0.23.2"
+beanhub-forms = "^0.1.1"
+pydantic-settings = "^2.0.3"
 
 [tool.poetry.extras]
-server = ["fastapi", "jinja2"]
+server = ["uvicorn", "fastapi", "jinja2"]
 
 [tool.poetry.dev-dependencies]
 

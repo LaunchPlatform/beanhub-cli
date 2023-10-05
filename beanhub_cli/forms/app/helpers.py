@@ -1,9 +1,8 @@
 import datetime
 
+from beanhub_forms.data_types.form import FormSchema
 from fastapi.encoders import jsonable_encoder
 from wtforms import Form as WTForm
-
-from ..data_types.form import FormSchema
 
 
 def convert_fields_for_js(form: WTForm, form_schema: FormSchema) -> list:
