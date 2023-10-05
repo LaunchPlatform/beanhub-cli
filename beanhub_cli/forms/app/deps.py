@@ -5,7 +5,7 @@ import urllib.parse
 import yaml
 from beanhub_forms.data_types.form import FormDoc
 from fastapi import Depends
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 from starlette.requests import Request
 from starlette.templating import Jinja2Templates
 from starlette_wtf.csrf import csrf_token
@@ -79,7 +79,7 @@ def get_form_doc() -> FormDoc | None:
         return
     with form_doc_path.open("rt") as fo:
         payload = yaml.safe_load(fo)
-        return parse_obj_as(FormDoc, payload)
+        return TypeAdapter(FormDoc).validate_python(payload)
 
 
 Jinja2TemplatesDep = typing.Annotated[Jinja2Templates, Depends(get_templates)]

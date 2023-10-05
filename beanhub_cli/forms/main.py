@@ -29,3 +29,8 @@ from .cli import cli
 def server(port: int, host: str, uvicorn_log_level: str):
     app = make_app()
     uvicorn.run(app, port=port, host=host, log_level=uvicorn_log_level)
+
+
+@cli.command(help="Validate form schema file")
+def validate():
+    pass
