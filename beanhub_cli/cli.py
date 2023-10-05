@@ -2,24 +2,24 @@ import logging
 import os
 
 import click
-from beancount_black.formatter import VERBOSE_LOG_LEVEL
 
-LOG_LEVEL_MAP = {
-    "verbose": VERBOSE_LOG_LEVEL,
-    "debug": logging.DEBUG,
-    "info": logging.INFO,
-    "warning": logging.WARNING,
-    "error": logging.ERROR,
-    "fatal": logging.FATAL,
-}
+from .context import Context
+from .context import LOG_LEVEL_MAP
+from .context import LogLevel
+from .context import pass_context
 
 
 @click.group()
 @click.option(
     "-l",
     "--log-level",
-    type=click.Choice(list(LOG_LEVEL_MAP), case_sensitive=False),
+    type=click.Choice(
+        list(map(lambda key: key.value, LOG_LEVEL_MAP.keys())), case_sensitive=False
+    ),
     default=lambda: os.environ.get("LOG_LEVEL", "INFO"),
 )
-def cli(log_level: str):
-    click.echo(f"Log level {log_level}")
+@pass_context
+def cli(ctx: Context, log_level: str):
+    click.echo(f"Log level {ctx.log_level}")
+    ctx.log_level = LogLevel(log_level)
+    logging.basicConfig(level=LOG_LEVEL_MAP[ctx.log_level])

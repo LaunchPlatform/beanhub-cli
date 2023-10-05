@@ -5,6 +5,9 @@ description = "Command line tools for BeanHub"
 authors = ["Fang-Pen Lin <fangpen@launchplatform.com>"]
 license = "MIT"
 
+[tool.poetry.scripts]
+bh = "beanhub_cli.main:cli"
+
 [tool.poetry.dependencies]
 python = "^3.9"
 pydantic = "^2.4.0"
