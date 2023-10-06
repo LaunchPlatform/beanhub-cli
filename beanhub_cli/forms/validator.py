@@ -1,11 +1,14 @@
 import pathlib
-import typing
 
 import yaml
 from beanhub_forms.data_types.form import FormDoc
+from rich.markup import escape
 from rich.tree import Tree
 
 CHILDREN_KEY = "__children__"
+TREE_NODE_STYLE = "blue"
+TREE_LEAF_ATTR_STYLE = "bold magenta"
+TREE_LEAF_VALUE_STYLE = "green"
 
 
 def format_loc(loc: tuple[str, ...]) -> str:
@@ -47,7 +50,7 @@ def _errors_to_tree(tree: dict, loc: tuple[str, ...], error: dict):
 def errors_to_tree(errors: list[dict]) -> dict:
     tree = {}
     for error in errors:
-        _errors_to_tree(tree, loc=error["loc"], error=error)
+        _errors_to_tree(tree, loc=merge_index_loc(error["loc"]), error=error)
     return tree
 
 
@@ -59,12 +62,23 @@ def _enrich_tree(rich_tree: Tree, tree: dict):
             key_name = f"[{key}]"
         else:
             key_name = key
-        subtree = rich_tree.add(key_name)
+        subtree = rich_tree.add(f"{escape(key_name)}")
         _enrich_tree(subtree, value)
     children = tree.get(CHILDREN_KEY, None)
     if children is not None:
         for error in children:
-            rich_tree.add(str(error))
+            items = []
+            for key in ("type", "msg", "url"):
+                if key not in error:
+                    continue
+                items.append(
+                    f"[{TREE_LEAF_ATTR_STYLE}]{escape(key)}[/{TREE_LEAF_ATTR_STYLE}]",
+                )
+                label = escape(error[key])
+                items.append(
+                    f"[{TREE_LEAF_VALUE_STYLE}]{label}[/{TREE_LEAF_VALUE_STYLE}]",
+                )
+            rich_tree.add(" ".join(items))
 
 
 def enrich_tree(tree: dict) -> Tree:
