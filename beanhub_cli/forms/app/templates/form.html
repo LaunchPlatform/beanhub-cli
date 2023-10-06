@@ -12,7 +12,7 @@
 {% block js %}
   <script src="{{ url_for('static', path='vendor/bootstrap-datepicker/js/bootstrap-datepicker.js') }}"></script>
   <script src="{{ url_for('static', path='vendor/select2/js/select2.full.js') }}"></script>
-  <script src="{{ url_for('static', path='js/beanhub-web-react-0.1.3.js') }}"></script>
+  <script src="{{ url_for('static', path='js/beanhub-web-react-0.1.5.js') }}"></script>
 
   <script>
     'use strict';
@@ -35,7 +35,9 @@
     const errors = {{ errors | tojson }}
 
     $(function () {
-        renderCustomForm(document.getElementById("custom-form"), {
+        renderCustomForm(
+          document.getElementById("custom-form"),
+          {
             fields,
             files,
             accounts,
@@ -45,7 +47,12 @@
             hiddenFields: {
                 csrf_token: {{ csrf_token() | tojson }}
             }
-        })
+          },
+          {
+            iconPrefix: "fa",
+            originalBs5InputAppend: true
+          },
+      )
     });
   </script>
 {% endblock js %}
