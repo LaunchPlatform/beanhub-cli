@@ -9,7 +9,7 @@ from .context import LogLevel
 from .context import pass_context
 
 
-@click.group()
+@click.group(help="Command line tools for BeanHub")
 @click.option(
     "-l",
     "--log-level",
