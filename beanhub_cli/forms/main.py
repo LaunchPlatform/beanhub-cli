@@ -51,7 +51,7 @@ def validate(ctx: Context):
     except ValidationError as exc:
         ctx.logger.error("Invalid form document with errors:")
         tree = errors_to_tree(exc.errors())
-        rich.print(enrich_tree(tree))
+        rich.print(enrich_tree(tree), file=sys.stderr)
         sys.exit(-1)
     except ValueError as exc:
         ctx.logger.error(f"Failed to validate with error: {exc.args[0]}")

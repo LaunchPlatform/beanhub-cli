@@ -84,7 +84,7 @@ def _enrich_tree(rich_tree: Tree, tree: dict):
 
 
 def enrich_tree(tree: dict) -> Tree:
-    root = Tree(":open_file_folder:")
+    root = Tree(":cross_mark:")
     _enrich_tree(rich_tree=root, tree=tree)
     return root
 
