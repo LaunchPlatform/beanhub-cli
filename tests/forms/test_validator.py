@@ -6,7 +6,6 @@ import pytest
 import yaml
 from beanhub_forms.data_types.form import FormDoc
 from click.testing import CliRunner
-from pydantic import TypeAdapter
 from pydantic import ValidationError
 
 from beanhub_cli.forms.validator import validate_doc
@@ -87,7 +86,7 @@ def test_validate_cmd(tmp_path: pathlib.Path, cli_runner: CliRunner):
     beanhub_dir.mkdir()
     form_doc = beanhub_dir / "forms.yaml"
     doc = FormDoc(forms=[])
-    form_doc.write_text(yaml.dump(TypeAdapter(FormDoc).dump_python(doc)))
+    form_doc.write_text(yaml.dump(FormDoc.model_dump(doc)))
 
     cli_runner.mix_stderr = False
     with switch_cwd(tmp_path):
