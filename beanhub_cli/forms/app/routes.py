@@ -77,10 +77,12 @@ async def submit_form(
             # TODO: we can combine updates for the same file to speed up a bit if we
             #       have to
             for file_update in file_updates:
+                file_path = pathlib.Path(file_update.file)
+                file_path.parent.mkdir(exist_ok=True, parents=True)
                 if file_update.type == OperationType.append:
                     with open(file_update.file, "at") as fo:
                         fo.write(file_update.content)
-                    updated_files.add(pathlib.Path(file_update.file))
+                    updated_files.add(file_path)
                 else:
                     raise ValueError(f"Unsupported operation type {file_update.type}")
             parser = make_parser()
