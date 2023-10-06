@@ -29,5 +29,4 @@ def cli(ctx: Context, log_level: str):
         handlers=[RichHandler()],
         force=True,
     )
-    click.echo(f"Log level {ctx.log_level.name}")
     ctx.log_level = LogLevel(log_level)

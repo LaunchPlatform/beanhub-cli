@@ -51,16 +51,9 @@ def validate(ctx: Context):
     except ValidationError as exc:
         ctx.logger.error("Invalid form document with errors:")
         tree = errors_to_tree(exc.errors())
-        rich.print(enrich_tree(tree), file=sys.stderr)
+        rich.print(enrich_tree(tree))
         sys.exit(-1)
     except ValueError as exc:
         ctx.logger.error(f"Failed to validate with error: {exc.args[0]}")
         sys.exit(-1)
-    ctx.logger.info("Form document is valid, following forms found:")
-    for form in form_doc.forms:
-        name = form.name
-        if form.display_name is not None:
-            name = f"{name} ({form.display_name}) "
-        ctx.logger.info(
-            "  %s (fields=%s)", name, list(map(lambda field: field.name, form.fields))
-        )
+    rich.print(":white_heavy_check_mark: Form document is valid")
