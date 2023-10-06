@@ -9,6 +9,7 @@ from click.testing import CliRunner
 from pydantic import ValidationError
 
 from beanhub_cli.forms.validator import format_loc
+from beanhub_cli.forms.validator import merge_index_loc
 from beanhub_cli.forms.validator import validate_doc
 from beanhub_cli.main import cli
 
@@ -35,6 +36,34 @@ def switch_cwd(cwd: pathlib.Path):
 )
 def test_format_loc(loc: tuple[str, ...], expected: str):
     assert format_loc(loc) == expected
+
+
+@pytest.mark.parametrize(
+    "loc, expected",
+    [
+        (("",), ("",)),
+        (("a", "b", "c"), ("a", "b", "c")),
+        ((0,), ("[0]",)),
+        ((0, "child"), ("[0]", "child")),
+        ((1, 2, 3), ("[1][2][3]",)),
+        (
+            ("root", 1, "child"),
+            (
+                "root[1]",
+                "child",
+            ),
+        ),
+        (
+            ("root", "child", 0),
+            (
+                "root",
+                "child[0]",
+            ),
+        ),
+    ],
+)
+def test_merge_index_loc(loc: tuple[str, ...], expected: tuple[str, ...]):
+    assert merge_index_loc(loc) == expected
 
 
 def test_file_does_not_exist(tmp_path: pathlib.Path):

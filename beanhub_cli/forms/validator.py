@@ -1,4 +1,5 @@
 import pathlib
+import typing
 
 import yaml
 from beanhub_forms.data_types.form import FormDoc
@@ -17,6 +18,20 @@ def format_loc(loc: tuple[str, ...]) -> str:
                 parts.append(".")
             parts.append(item)
     return "".join(parts)
+
+
+def merge_index_loc(loc: tuple[str, ...]) -> tuple[str, ...]:
+    new_loc: list[str] = []
+    for item in loc:
+        if isinstance(item, int):
+            previous = ""
+            if new_loc:
+                previous = new_loc.pop(-1)
+            new_item = f"{previous}[{item}]"
+            new_loc.append(new_item)
+            continue
+        new_loc.append(item)
+    return tuple(new_loc)
 
 
 def _errors_to_tree(tree: dict, loc: tuple[str, ...], error: dict):
