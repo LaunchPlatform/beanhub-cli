@@ -2,6 +2,7 @@ import logging
 import os
 
 import click
+from rich.logging import RichHandler
 
 from .context import Context
 from .context import LOG_LEVEL_MAP
@@ -20,6 +21,13 @@ from .context import pass_context
 )
 @pass_context
 def cli(ctx: Context, log_level: str):
+    FORMAT = "%(message)s"
+    logging.basicConfig(
+        level=LOG_LEVEL_MAP[ctx.log_level],
+        format=FORMAT,
+        datefmt="[%X]",
+        handlers=[RichHandler()],
+        force=True,
+    )
     click.echo(f"Log level {ctx.log_level.name}")
     ctx.log_level = LogLevel(log_level)
-    logging.basicConfig(level=LOG_LEVEL_MAP[ctx.log_level], force=True)
