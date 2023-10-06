@@ -55,6 +55,7 @@ def list_forms(ctx: Context):
         if form.display_name:
             form_title += f" [{FORM_DISPLAY_NAME_STYLE}]({escape(form.display_name)})[/{FORM_DISPLAY_NAME_STYLE}]"
         rich.print(form_title)
+
         table = Table(title="Fields", box=box.SIMPLE, header_style="bold yellow")
         table.add_column("Name", style=TABLE_COLUMN_STYLE)
         table.add_column("Display Name", style=TABLE_COLUMN_STYLE)
@@ -68,6 +69,18 @@ def list_forms(ctx: Context):
                 escape(field.type.value),
                 str(field.required),
                 escape(field.default) if field.default else None,
+            )
+        rich.print(Padding(table, (1, 0, 1, 4)))
+
+        table = Table(title="Operations", box=box.SIMPLE, header_style="bold yellow")
+        table.add_column("Type", style=TABLE_COLUMN_STYLE)
+        table.add_column("File", style=TABLE_COLUMN_STYLE)
+        table.add_column("Content", style=TABLE_COLUMN_STYLE)
+        for operation in form.operations:
+            table.add_row(
+                escape(operation.type),
+                escape(operation.file),
+                escape(operation.content),
             )
         rich.print(Padding(table, (1, 0, 1, 4)))
 
