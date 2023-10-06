@@ -18,6 +18,7 @@ from starlette_wtf import StarletteForm
 
 from . import deps
 from .helpers import convert_fields_for_js
+from .settings import settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -68,7 +69,11 @@ async def submit_form(
         logger.info("Processing form %s ...", form_schema.name)
         try:
             updated_files: set[pathlib.Path] = set()
-            file_updates = process_form(form_schema=form_schema, form_data=form_data)
+            file_updates = process_form(
+                form_schema=form_schema,
+                form_data=form_data,
+                beancount_dir=settings.BEANCOUNT_DIR,
+            )
             # TODO: we can combine updates for the same file to speed up a bit if we
             #       have to
             for file_update in file_updates:
