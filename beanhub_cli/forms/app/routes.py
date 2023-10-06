@@ -1,21 +1,23 @@
 import io
 import logging
+import pathlib
 
-from starlette_wtf import StarletteForm
 from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
+from beanhub_forms.data_types.form import OperationType
+from beanhub_forms.form import make_custom_form
+from beanhub_forms.processor import process_form
+from beanhub_forms.processor import ProcessError
+from beanhub_forms.processor import RenderError
 from fastapi import APIRouter
 from fastapi import HTTPException
 from fastapi import Request
 from fastapi import Response
 from fastapi import status
+from starlette_wtf import StarletteForm
 
 from . import deps
-from beanhub_forms.form import make_custom_form
 from .helpers import convert_fields_for_js
-from .processor import process_form
-from .processor import ProcessError
-from .processor import RenderError
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -56,7 +58,7 @@ async def submit_form(
         accounts=[],
         currencies=[],
         files=[],
-        form_base=StarletteForm
+        form_base=StarletteForm,
     )
     form = await CustomForm.from_formdata(request)
     errors: list[str] = []
@@ -65,7 +67,17 @@ async def submit_form(
         del form_data["csrf_token"]
         logger.info("Processing form %s ...", form_schema.name)
         try:
-            updated_files = process_form(form_schema=form_schema, form_data=form_data)
+            updated_files: set[pathlib.Path] = set()
+            file_updates = process_form(form_schema=form_schema, form_data=form_data)
+            # TODO: we can combine updates for the same file to speed up a bit if we
+            #       have to
+            for file_update in file_updates:
+                if file_update.type == OperationType.append:
+                    with open(file_update.file, "at") as fo:
+                        fo.write(file_update.content)
+                    updated_files.add(pathlib.Path(file_update.file))
+                else:
+                    raise ValueError(f"Unsupported operation type {file_update.type}")
             parser = make_parser()
             formatter = Formatter()
             for updated_file in updated_files:
