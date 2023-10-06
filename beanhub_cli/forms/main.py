@@ -9,6 +9,7 @@ from ..context import Context
 from ..context import pass_context
 from .app.main import make_app
 from .cli import cli
+from .validator import format_loc
 from .validator import validate_doc
 
 
@@ -51,7 +52,7 @@ def validate(ctx: Context):
                 "  errors[%s] type=%s, loc=%s, msg=%s",
                 i,
                 error["type"],
-                error["loc"],
+                format_loc(error["loc"]),
                 error["msg"],
             )
         sys.exit(-1)

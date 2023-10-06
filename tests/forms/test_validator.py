@@ -8,6 +8,7 @@ from beanhub_forms.data_types.form import FormDoc
 from click.testing import CliRunner
 from pydantic import ValidationError
 
+from beanhub_cli.forms.validator import format_loc
 from beanhub_cli.forms.validator import validate_doc
 from beanhub_cli.main import cli
 
@@ -20,6 +21,20 @@ def switch_cwd(cwd: pathlib.Path):
         yield
     finally:
         os.chdir(current_cwd)
+
+
+@pytest.mark.parametrize(
+    "loc, expected",
+    [
+        (("",), ""),
+        (
+            ("forms", 0, "fields", 0, "StrFormField", "type"),
+            "forms[0].fields[0].StrFormField.type",
+        ),
+    ],
+)
+def test_format_loc(loc: tuple[str, ...], expected: str):
+    assert format_loc(loc) == expected
 
 
 def test_file_does_not_exist(tmp_path: pathlib.Path):
