@@ -74,6 +74,7 @@ async def submit_form(
                 form_data=form_data,
                 beancount_dir=settings.BEANCOUNT_DIR,
             )
+            # TODO: add preview mode
             # TODO: we can combine updates for the same file to speed up a bit if we
             #       have to
             for file_update in file_updates:
