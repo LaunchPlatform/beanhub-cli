@@ -1,5 +1,8 @@
 import pathlib
+import socket
 import sys
+import typing
+import webbrowser
 
 import click
 import rich
@@ -24,6 +27,18 @@ FORM_NAME_STYLE = "green"
 FORM_DISPLAY_NAME_STYLE = "bright_black"
 TABLE_HEADER_STYLE = "yellow"
 TABLE_COLUMN_STYLE = "cyan"
+
+
+class StartupCallbackServer(uvicorn.Server):
+    def __init__(self, config: uvicorn.Config, startup_callback: typing.Callable):
+        super().__init__(config)
+        self.startup_callback = startup_callback
+
+    async def startup(
+        self, sockets: typing.Optional[list[socket.socket]] = None
+    ) -> None:
+        await super().startup()
+        self.startup_callback()
 
 
 def _validate_form(ctx: Context) -> FormDoc:
@@ -92,10 +107,11 @@ def list_forms(ctx: Context):
         rich.print(Padding(table, (1, 0, 0, 4)))
 
 
-@cli.command(help="Run a web server for form input")
+@cli.command(name="server", help="Run a web server for form input")
 @click.option(
     "-p",
     "--port",
+    type=int,
     default=8080,
     show_default=True,
     help="Port number for serving the forms web app.",
@@ -103,9 +119,17 @@ def list_forms(ctx: Context):
 @click.option(
     "-h",
     "--host",
+    type=str,
     default="127.0.0.1",
     show_default=True,
     help="Host for serving the forms web app.",
+)
+@click.option(
+    "-o",
+    "--open-browser",
+    default=True,
+    type=bool,
+    help="Open a new tab in the browser or not.",
 )
 @click.option(
     "--uvicorn-log-level",
@@ -114,6 +138,17 @@ def list_forms(ctx: Context):
     help="Log level for Uvicorn web server.",
 )
 @pass_context
-def server(ctx: Context, port: int, host: str, uvicorn_log_level: str):
+def run_server(
+    ctx: Context, port: int, host: str, open_browser: bool, uvicorn_log_level: str
+):
     app = make_app()
-    uvicorn.run(app, port=port, host=host, log_level=uvicorn_log_level)
+
+    def after_startup():
+        if open_browser:
+            url = f"http://{host}:{port}"
+            ctx.logger.info("Opening URL %s in the browser", url)
+            webbrowser.open(url)
+
+    config = uvicorn.Config(app=app, port=port, host=host, log_level=uvicorn_log_level)
+    server = StartupCallbackServer(config=config, startup_callback=after_startup)
+    server.run()
