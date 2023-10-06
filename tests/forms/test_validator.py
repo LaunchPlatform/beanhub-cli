@@ -91,7 +91,7 @@ def test_validate_cmd(tmp_path: pathlib.Path, cli_runner: CliRunner):
 
     cli_runner.mix_stderr = False
     with switch_cwd(tmp_path):
-        result = cli_runner.invoke(cli, ["forms", "validate"])
+        result = cli_runner.invoke(cli, ["form", "validate"])
     assert result.exit_code == 0
     assert "Form document is valid" in result.stderr
 
@@ -104,6 +104,6 @@ def test_validate_cmd_with_invalid_doc(tmp_path: pathlib.Path, cli_runner: CliRu
 
     cli_runner.mix_stderr = False
     with switch_cwd(tmp_path):
-        result = cli_runner.invoke(cli, ["forms", "validate"])
+        result = cli_runner.invoke(cli, ["form", "validate"])
     assert result.exit_code == -1
     assert "Invalid form document with errors" in result.stderr
