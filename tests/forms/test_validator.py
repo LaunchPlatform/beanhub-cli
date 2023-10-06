@@ -2,9 +2,11 @@ import pathlib
 
 import pytest
 import yaml
+from click.testing import CliRunner
 from pydantic import ValidationError
 
 from beanhub_cli.forms.validator import validate_doc
+from beanhub_cli.main import cli
 
 
 def test_file_does_not_exist(tmp_path: pathlib.Path):
@@ -64,3 +66,8 @@ def test_bad_schema(tmp_path: pathlib.Path, schema: dict, expected_errors: list)
     with pytest.raises(ValidationError) as exc:
         validate_doc(doc_file)
     assert exc.value.errors() == expected_errors
+
+
+def test_validate(cli_runner: CliRunner):
+    result = cli_runner.invoke(cli, "forms", "validate")
+    assert result.exit_code == 0
