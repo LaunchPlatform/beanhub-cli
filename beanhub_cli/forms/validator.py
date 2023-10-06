@@ -6,7 +6,7 @@ from rich.markup import escape
 from rich.tree import Tree
 
 CHILDREN_KEY = "__children__"
-TREE_NODE_STYLE = "blue"
+TREE_NODE_STYLE = "yellow"
 TREE_LEAF_ATTR_STYLE = "bold magenta"
 TREE_LEAF_VALUE_STYLE = "green"
 
@@ -62,7 +62,9 @@ def _enrich_tree(rich_tree: Tree, tree: dict):
             key_name = f"[{key}]"
         else:
             key_name = key
-        subtree = rich_tree.add(f"{escape(key_name)}")
+        subtree = rich_tree.add(
+            f"[{TREE_NODE_STYLE}]{escape(key_name)}[/{TREE_NODE_STYLE}]"
+        )
         _enrich_tree(subtree, value)
     children = tree.get(CHILDREN_KEY, None)
     if children is not None:
