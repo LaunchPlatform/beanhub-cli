@@ -29,6 +29,7 @@ LOG_LEVEL_MAP = {
 @dataclasses.dataclass
 class Context:
     log_level: LogLevel = LogLevel.INFO
+    logger: logging.Logger = logging.getLogger("beanhub_cli")
 
 
 pass_context = click.make_pass_decorator(Context, ensure=True)

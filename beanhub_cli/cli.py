@@ -22,4 +22,4 @@ from .context import pass_context
 def cli(ctx: Context, log_level: str):
     click.echo(f"Log level {ctx.log_level.name}")
     ctx.log_level = LogLevel(log_level)
-    logging.basicConfig(level=LOG_LEVEL_MAP[ctx.log_level])
+    logging.basicConfig(level=LOG_LEVEL_MAP[ctx.log_level], force=True)
