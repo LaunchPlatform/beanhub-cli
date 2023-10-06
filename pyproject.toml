@@ -18,7 +18,7 @@ pyyaml = "^6.0.1"
 beancount-black = "^0.2.1"
 click = "^8.1.7"
 uvicorn = "^0.23.2"
-beanhub-forms = "^0.1.1"
+beanhub-forms = "^0.1.2"
 pydantic-settings = "^2.0.3"
 
 [tool.poetry.extras]

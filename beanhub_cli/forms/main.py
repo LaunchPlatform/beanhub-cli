@@ -60,4 +60,9 @@ def validate(ctx: Context):
         sys.exit(-1)
     ctx.logger.info("Form document is valid, following forms found:")
     for form in form_doc.forms:
-        ctx.logger.info("  %s", form)
+        name = form.name
+        if form.display_name is not None:
+            name = f"{name} ({form.display_name}) "
+        ctx.logger.info(
+            "  %s (fields=%s)", name, list(map(lambda field: field.name, form.fields))
+        )

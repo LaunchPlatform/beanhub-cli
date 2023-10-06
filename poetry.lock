@@ -63,13 +63,13 @@ lark = ">=1.1.2,<2.0.0"
 
 [[package]]
 name = "beanhub-forms"
-version = "0.1.1"
+version = "0.1.2"
 description = "Library for generating BeanHub's custom forms"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "beanhub_forms-0.1.1-py3-none-any.whl", hash = "sha256:9a437015e8e709776fd4d2abe16a4917f132751dcef0f81445ddd80d75d4acbe"},
-    {file = "beanhub_forms-0.1.1.tar.gz", hash = "sha256:fb1eb7c360295554bea19af0595dcb8ffce6741de791e4296376beafa427a5fe"},
+    {file = "beanhub_forms-0.1.2-py3-none-any.whl", hash = "sha256:4b8fdcd36197fc294093db5965e9621d806627ea729300cad2a9e61a95e8ea7b"},
+    {file = "beanhub_forms-0.1.2.tar.gz", hash = "sha256:2cdd9a545087f108635b818aee41d2f544f0128164023007a8dc92322281d7e6"},
 ]
 
 [package.dependencies]
@@ -697,4 +697,4 @@ server = ["fastapi", "jinja2", "uvicorn"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "4f4c31f7709e8b216926ddf38911b1789754c93f7e0a83b26f70dcb45d0a8dc9"
+content-hash = "cffcd8a18187de5dbbd50d3d910682350c22401997688533d5be23d1fb66a433"
