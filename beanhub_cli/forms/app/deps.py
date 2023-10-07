@@ -1,16 +1,21 @@
+import io
 import json
+import pathlib
 import typing
 import urllib.parse
 from importlib.metadata import version
 
-import yaml
+import yaml.parser
 from beanhub_forms.data_types.form import FormDoc
 from fastapi import Depends
+from fastapi import status
+from fastapi.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.templating import Jinja2Templates
 from starlette_wtf.csrf import csrf_token
 
 from . import constants
+from ..validator import format_loc
 from .settings import settings
 
 
@@ -72,19 +77,40 @@ def get_templates(
     templates.env.globals["settings"] = settings
     templates.env.globals["beanhub_cli_version"] = version("beanhub-cli")
     templates.env.globals["beanhub_forms_version"] = version("beanhub-forms")
+
+    templates.env.filters["format_loc"] = format_loc
     return templates
 
 
-def get_form_doc() -> FormDoc | None:
+def get_raw_form_doc() -> typing.Optional[tuple[pathlib.Path, str]]:
     form_doc_path = settings.BEANCOUNT_DIR / ".beanhub" / "forms.yaml"
     if not form_doc_path.exists():
         return
     with form_doc_path.open("rt") as fo:
-        payload = yaml.safe_load(fo)
-        return FormDoc.model_validate(payload)
+        payload = fo.read()
+    return form_doc_path, payload
+
+
+def get_form_doc(
+    raw_form_doc: tuple[pathlib.Path, str] = Depends(get_raw_form_doc),
+    get_url_for: typing.Callable = Depends(get_url_for),
+) -> typing.Optional[FormDoc]:
+    if raw_form_doc is None:
+        return
+    try:
+        _, raw_doc = raw_form_doc
+        return FormDoc.model_validate(yaml.safe_load(io.StringIO(raw_doc)))
+    except (ValueError, yaml.parser.ParserError):
+        raise HTTPException(
+            status_code=status.HTTP_302_FOUND,
+            headers={"Location": str(get_url_for("form_doc_errors"))},
+        )
 
 
 Jinja2TemplatesDep = typing.Annotated[Jinja2Templates, Depends(get_templates)]
 FlashDep = typing.Annotated[typing.Callable[[str, str, bool], None], Depends(get_flash)]
 UrlForDep = typing.Annotated[typing.Callable, Depends(get_url_for)]
-FormDocDep = typing.Annotated[FormDoc | None, Depends(get_form_doc)]
+RawFormDocDep = typing.Annotated[
+    typing.Optional[tuple[pathlib.Path, dict]], Depends(get_raw_form_doc)
+]
+FormDocDep = typing.Annotated[typing.Optional[FormDoc], Depends(get_form_doc)]

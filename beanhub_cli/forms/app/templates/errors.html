@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+  Forms
+{% endblock %}
+
+{% block content %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Forms</a></li>
+      <li class="breadcrumb-item active"><a href="{{ url_for('form_doc_errors') }}" ria-current="page">Errors</a></li>
+    </ol>
+  </nav>
+
+  <h2>Oops, something went wrong</h2>
+  <p>Oops, something is wrong with your form doc at <mark>{{ doc_path }}</mark></p>
+
+  <h3>Details of the errors:</h3>
+  {% if yaml_error is not none %}
+    <pre><code>{{ yaml_error }}</code></pre>
+  {% elif validation_error is not none %}
+    <ol class="list-group list-group-numbered">
+    {% for error in validation_error.errors() %}
+      <li class="list-group-item d-flex justify-content-between align-items-start">
+        <div class="ms-2 w-100">
+          <mark>{{ error['msg'] }}</mark>
+          <dl class="row">
+            {% for key, value in error.items() if key not in ['type', 'msg'] %}
+            <dt class="col-sm-1">{{ key | capitalize }}:</dt>
+            <dd class="col-sm-11">
+              {% if key == 'loc' %}
+                {{ error[key] | format_loc }}
+              {% elif key == 'url' %}
+              {{ error[key] | urlize }}
+              {% else %}
+                {{ error[key] }}
+              {% endif %}
+            </dd>
+            {% endfor %}
+          </dl>
+        </div>
+        <span class="badge bg-primary rounded-pill">Type {{ error['type'] }}</span>
+      </li>
+    {% endfor %}
+    </ol>
+  {% elif value_error is not none %}
+    <pre><code>{{ value_error }}</code></pre>
+  {% endif %}
+{% endblock content %}

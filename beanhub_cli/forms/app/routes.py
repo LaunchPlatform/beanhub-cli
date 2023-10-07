@@ -1,9 +1,12 @@
 import io
 import logging
 import pathlib
+import typing
 
+import yaml.parser
 from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
+from beanhub_forms.data_types.form import FormDoc
 from beanhub_forms.data_types.form import OperationType
 from beanhub_forms.form import make_custom_form
 from beanhub_forms.processor import process_form
@@ -14,6 +17,7 @@ from fastapi import HTTPException
 from fastapi import Request
 from fastapi import Response
 from fastapi import status
+from pydantic import ValidationError
 from starlette_wtf import StarletteForm
 
 from . import deps
@@ -112,5 +116,37 @@ async def submit_form(
             form=form,
             fields=fields,
             errors=errors,
+        ),
+    )
+
+
+@router.get("/errors")
+def form_doc_errors(
+    request: Request,
+    templates: deps.Jinja2TemplatesDep,
+    raw_form_doc: deps.RawFormDocDep,
+) -> Response:
+    doc_path, raw_doc = raw_form_doc
+
+    yaml_error: typing.Optional[yaml.parser.ParserError] = None
+    validation_error: typing.Optional[ValidationError] = None
+    value_error: typing.Optional[ValueError] = None
+    try:
+        FormDoc.model_validate(yaml.safe_load(io.StringIO(raw_doc)))
+    except yaml.parser.ParserError as exc:
+        yaml_error = exc
+    except ValidationError as exc:
+        validation_error = exc
+    except ValueError as exc:
+        value_error = exc
+
+    return templates.TemplateResponse(
+        "errors.html",
+        dict(
+            request=request,
+            doc_path=doc_path,
+            validation_error=validation_error,
+            value_error=value_error,
+            yaml_error=yaml_error,
         ),
     )
