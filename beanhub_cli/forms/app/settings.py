@@ -1,5 +1,6 @@
 import pathlib
 import secrets
+import typing
 
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
@@ -14,4 +15,17 @@ class Settings(BaseSettings):
     BEANCOUNT_DIR: pathlib.Path = pathlib.Path.cwd()
 
 
-settings = Settings()
+# Do not import and access this directly, use settings instead
+_settings = Settings()
+
+
+class SettingsProxy:
+    def __init__(self, get_settings: typing.Callable[[], Settings]):
+        self._get_settings = get_settings
+
+    def __getattr__(self, item: str) -> typing.Any:
+        global_settings = self._get_settings()
+        return getattr(global_settings, item)
+
+
+settings: Settings = SettingsProxy(lambda: _settings)

@@ -8,6 +8,7 @@
   {% if form_doc is none %}
     <p>No form definitions found</p>
   {% else %}
+    <h2>Forms</h2>
     <ul>
       {% for form in form_doc.forms %}
       <li><a href="{{ url_for('submit_form', form_name=form.name) }}">{{ form.name }}</a></li>
