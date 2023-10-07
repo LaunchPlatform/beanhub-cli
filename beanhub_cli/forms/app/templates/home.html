@@ -11,6 +11,29 @@
 {% block js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
 <script>hljs.highlightAll();</script>
+
+<script>
+  const csrf_token = {{ csrf_token() | tojson }}
+  const create_sample_doc_url = {{ url_for('create_sample_doc') | string | tojson }}
+
+  async function create_sample_doc() {
+      const data = new URLSearchParams();
+      data.append("csrf_token", csrf_token);
+
+      const resp = await fetch(create_sample_doc_url, {
+          method: 'post',
+          body: data,
+      })
+      const payload = await resp.json()
+      if (payload.code === 'ok') {
+          const create_sample = document.getElementById("create-sample-doc");
+          const done = document.getElementById("create-sample-doc-done");
+          create_sample.style.display = "none";
+          done.style.display = "block";
+      }
+      return false;
+  }
+</script>
 {% endblock js %}
 
 {% block content %}
@@ -36,7 +59,19 @@ bh form server
     <p>Or, you can use the button below to create the file automatically and reload this page to try it out:</p>
 
     <div class="d-flex justify-content-center mt-2 mb-3">
-      <button class="btn btn-primary">Create sample forms doc</button>
+      <span id="create-sample-doc">
+        <button class="btn btn-primary" onclick="return create_sample_doc();">Create sample forms doc</button>
+      </span>
+      <div id="create-sample-doc-done" style="display: none" class="text-center">
+        <small class="d-inline-flex mb-3 px-2 py-1 fw-semibold text-success-emphasis bg-success-subtle border border-success-subtle rounded-2 align-items-center">
+          <i class="fa fa-check me-2"></i>
+          Sample form doc created
+        </small>
+        <div>
+          <a class="btn btn-primary" href="{{ url_for('home') }}">Reload page</a>
+        </div>
+      </div>
+
     </div>
 
     <p>For more information about BeanHub Forms and how to use it, please read our blog post
