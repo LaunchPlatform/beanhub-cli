@@ -100,11 +100,15 @@ async def submit_form(
             errors.append(exc.message)
         flash("Submitted form successfully", "success")
     fields = convert_fields_for_js(form=form, form_schema=form_schema)
+    display_name = form_schema.name
+    if form_schema.display_name is not None:
+        display_name = form_schema.display_name
     return templates.TemplateResponse(
         "form.html",
         dict(
             request=request,
             form_schema=form_schema,
+            display_name=display_name,
             form=form,
             fields=fields,
             errors=errors,

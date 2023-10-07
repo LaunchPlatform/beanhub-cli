@@ -66,10 +66,10 @@
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Form List</a></li>
-      <li class="breadcrumb-item active"><a href="{{ url_for('submit_form', form_name=form_schema.name) }}" ria-current="page">Form {{ form_schema.name }}</a></li>
+      <li class="breadcrumb-item active"><a href="{{ url_for('submit_form', form_name=form_schema.name) }}" ria-current="page">{{ display_name }}</a></li>
     </ol>
   </nav>
 
-  <h2>Form - {{ form_schema.name if form_schema.display_name is none else form_schema.display_name }}</h2>
+  <h2>Form - {{ display_name }}</h2>
   <div id="custom-form"></div>
 {% endblock content %}
