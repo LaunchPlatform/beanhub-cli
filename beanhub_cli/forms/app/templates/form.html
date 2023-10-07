@@ -7,6 +7,11 @@
 {% block css %}
   <link href="{{ url_for('static', path='vendor/bootstrap-datepicker/css/bootstrap-datepicker.css') }}" rel="stylesheet">
   <link href="{{ url_for('static', path='vendor/select2/css/select2.min.css') }}" rel="stylesheet">
+  <style>
+    #custom-form .form-group.row {
+      margin: 30px 0;
+    }
+  </style>
 {% endblock css %}
 
 {% block js %}
