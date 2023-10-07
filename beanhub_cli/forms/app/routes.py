@@ -128,11 +128,13 @@ def form_doc_errors(
 ) -> Response:
     doc_path, raw_doc = raw_form_doc
 
+    valid_doc = False
     yaml_error: typing.Optional[yaml.parser.ParserError] = None
     validation_error: typing.Optional[ValidationError] = None
     value_error: typing.Optional[ValueError] = None
     try:
         FormDoc.model_validate(yaml.safe_load(io.StringIO(raw_doc)))
+        valid_doc = True
     except yaml.parser.ParserError as exc:
         yaml_error = exc
     except ValidationError as exc:
@@ -148,5 +150,6 @@ def form_doc_errors(
             validation_error=validation_error,
             value_error=value_error,
             yaml_error=yaml_error,
+            valid_doc=valid_doc,
         ),
     )
