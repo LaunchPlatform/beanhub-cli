@@ -71,7 +71,10 @@ bh form server
 
     <div class="d-flex justify-content-center mt-2 mb-3">
       <span id="create-sample-doc">
-        <button class="btn btn-primary" onclick="return create_sample_doc();">Create sample forms doc</button>
+        <button class="btn btn-primary" onclick="return create_sample_doc();">
+          <i class="fa-solid fa-file-circle-plus"></i>
+          Create sample forms doc
+        </button>
       </span>
       <div id="create-sample-doc-done" style="display: none" class="text-center">
         <small class="d-inline-flex mb-3 px-2 py-1 fw-semibold text-success-emphasis bg-success-subtle border border-success-subtle rounded-2 align-items-center">
@@ -79,7 +82,10 @@ bh form server
           Sample form doc created
         </small>
         <div>
-          <a class="btn btn-primary" href="{{ url_for('home') }}">Reload page</a>
+          <a class="btn btn-primary" href="{{ url_for('home') }}">
+            <i class="fa fa-rotate"></i>
+            Reload page
+          </a>
         </div>
       </div>
       <div id="create-sample-doc-failed" style="display: none" class="text-center">
