@@ -17,6 +17,7 @@ from fastapi import HTTPException
 from fastapi import Request
 from fastapi import Response
 from fastapi import status
+from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 from starlette_wtf import StarletteForm
 
@@ -125,7 +126,10 @@ def form_doc_errors(
     request: Request,
     templates: deps.Jinja2TemplatesDep,
     raw_form_doc: deps.RawFormDocDep,
+    url_for: deps.UrlForDep,
 ) -> Response:
+    if raw_form_doc is None:
+        return RedirectResponse(url_for("home"))
     doc_path, raw_doc = raw_form_doc
 
     valid_doc = False
