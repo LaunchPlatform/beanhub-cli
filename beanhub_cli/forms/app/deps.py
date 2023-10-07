@@ -1,6 +1,7 @@
 import json
 import typing
 import urllib.parse
+from importlib.metadata import version
 
 import yaml
 from beanhub_forms.data_types.form import FormDoc
@@ -69,6 +70,8 @@ def get_templates(
     templates.env.globals["csrf_token"] = lambda: csrf_token(request)
     templates.env.globals["constants"] = constants
     templates.env.globals["settings"] = settings
+    templates.env.globals["beanhub_cli_version"] = version("beanhub-cli")
+    templates.env.globals["beanhub_forms_version"] = version("beanhub-forms")
     return templates
 
 
