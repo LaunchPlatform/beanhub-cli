@@ -24,12 +24,23 @@
           method: 'post',
           body: data,
       })
+      const failed = document.getElementById("create-sample-doc-failed");
+      const create_sample = document.getElementById("create-sample-doc");
+      const failedText = document.getElementById("create-sample-doc-failed-text");
+      create_sample.style.display = "none";
+
       const payload = await resp.json()
-      if (payload.code === 'ok') {
-          const create_sample = document.getElementById("create-sample-doc");
-          const done = document.getElementById("create-sample-doc-done");
-          create_sample.style.display = "none";
-          done.style.display = "block";
+      if (resp.status === 200) {
+          if (payload.code === 'ok') {
+              const done = document.getElementById("create-sample-doc-done");
+              done.style.display = "block";
+          } else {
+              failedText.innerText = `Something went wrong, code=${payload.code}`;
+              failed.style.display = "block";
+          }
+      } else {
+          failedText.innerText = `Something went wrong, status=${resp.status}`;
+          failed.style.display = "block";
       }
       return false;
   }
@@ -70,6 +81,12 @@ bh form server
         <div>
           <a class="btn btn-primary" href="{{ url_for('home') }}">Reload page</a>
         </div>
+      </div>
+      <div id="create-sample-doc-failed" style="display: none" class="text-center">
+        <small class="d-inline-flex mb-3 px-2 py-1 fw-semibold text-danger-emphasis bg-danger-subtle border border-danger-subtle rounded-2 align-items-center">
+          <i class="fa fa-xmark me-2"></i>
+          <span id="create-sample-doc-failed-text"></span>
+        </small>
       </div>
 
     </div>
