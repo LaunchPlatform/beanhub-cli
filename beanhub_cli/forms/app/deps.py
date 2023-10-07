@@ -67,7 +67,9 @@ def get_templates(
     ),
     url_for: typing.Callable = Depends(get_url_for),
 ) -> Jinja2Templates:
-    templates = Jinja2Templates(directory=constants.PACKAGE_DIR / "app" / "templates")
+    templates = Jinja2Templates(
+        directory=constants.FORMS_PACKAGE_DIR / "app" / "templates"
+    )
     # Notice: This will override the original `url_for` provided by Jinja2Templates
     templates.env.globals["url_for"] = url_for
     templates.env.globals["request"] = request
@@ -107,6 +109,10 @@ def get_form_doc(
         )
 
 
+def get_sample_form_doc() -> str:
+    return (constants.DATA_DIR / "sample_forms_doc.yaml").read_text()
+
+
 Jinja2TemplatesDep = typing.Annotated[Jinja2Templates, Depends(get_templates)]
 FlashDep = typing.Annotated[typing.Callable[[str, str, bool], None], Depends(get_flash)]
 UrlForDep = typing.Annotated[typing.Callable, Depends(get_url_for)]
@@ -114,3 +120,4 @@ RawFormDocDep = typing.Annotated[
     typing.Optional[tuple[pathlib.Path, dict]], Depends(get_raw_form_doc)
 ]
 FormDocDep = typing.Annotated[typing.Optional[FormDoc], Depends(get_form_doc)]
+SampleFormDocDep = typing.Annotated[str, Depends(get_sample_form_doc)]

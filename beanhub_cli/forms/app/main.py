@@ -31,7 +31,7 @@ def make_app() -> FastAPI:
     app.include_router(router)
     app.mount(
         "/static",
-        StaticFiles(directory=constants.PACKAGE_DIR / "app" / "static"),
+        StaticFiles(directory=constants.FORMS_PACKAGE_DIR / "app" / "static"),
         name="static",
     )
     return app

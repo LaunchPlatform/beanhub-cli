@@ -24,7 +24,7 @@
     <h2>No form definitions found</h2>
 
     <p>We cannot find the BeanHub Forms doc file in your current folder, <mark>{{ settings.BEANCOUNT_DIR }}</mark>.</p>
-    <p>To work with BeanHub Forms, you need to create the doc files at <mark>.beanhub/forms.yaml</mark> in your Beancount folder, then run beanhub-cli form server command in it like this:</p>
+    <p>To work with BeanHub Forms, you need to create the doc file at <mark>.beanhub/forms.yaml</mark> in your Beancount folder, then run beanhub-cli form server command in it like this:</p>
 
     <div><pre><code class="language-bash">cd /path/to/your/beancount/folder
 bh form server
@@ -32,35 +32,7 @@ bh form server
 
     <p>For example, you can create the BeanHub Forms doc file at <mark>{{ settings.BEANCOUNT_DIR / ".beanhub" / "forms.yaml" }}</mark> with the following sample form as content:</p>
 
-    <div><pre><code class="language-yaml">{% raw %}forms:
-- name: add-xyz-hours
-  display_name: "Hours spent on XYZ contracting project"
-  fields:
-  - name: date
-    type: date
-    display_name: "Date"
-    required: true
-  - name: hours
-    type: number
-    display_name: "Hours"
-    required: true
-  - name: rate
-    type: number
-    display_name: "Rate (USD)"
-    default: "300"
-    required: true
-  - name: narration
-    type: str
-    default: "Hours spent on the software development project for client XYZ"
-    display_name: "Narration"
-  operations:
-  - type: append
-    file: "books/{{ date.year }}.bean"
-    content: |
-      {{ date }} * {{ narration | tojson }}
-        Assets:AccountsReceivable:Contracting:XYZ      {{  hours }} XYZ.HOUR @ {{ rate }} USD
-        Income:Contracting:XYZ
-{% endraw %}</code></pre></div>
+    <div><pre><code class="language-yaml">{{ sample_form_doc }}</code></pre></div>
     <p>Or, you can use the button below to create the file automatically and reload this page to try it out:</p>
 
     <div class="d-flex justify-content-center mt-2 mb-3">

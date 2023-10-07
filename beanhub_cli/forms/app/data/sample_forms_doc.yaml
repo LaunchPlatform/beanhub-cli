@@ -1,0 +1,28 @@
+forms:
+- name: add-xyz-hours
+  display_name: "Hours spent on XYZ contracting project"
+  fields:
+  - name: date
+    type: date
+    display_name: "Date"
+    required: true
+  - name: hours
+    type: number
+    display_name: "Hours"
+    required: true
+  - name: rate
+    type: number
+    display_name: "Rate (USD)"
+    default: "300"
+    required: true
+  - name: narration
+    type: str
+    default: "Hours spent on the software development project for client XYZ"
+    display_name: "Narration"
+  operations:
+  - type: append
+    file: "books/{{ date.year }}.bean"
+    content: |
+      {{ date }} * {{ narration | tojson }}
+        Assets:AccountsReceivable:Contracting:XYZ      {{  hours }} XYZ.HOUR @ {{ rate }} USD
+        Income:Contracting:XYZ

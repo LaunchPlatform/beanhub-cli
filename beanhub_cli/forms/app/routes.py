@@ -34,12 +34,14 @@ async def home(
     request: Request,
     templates: deps.Jinja2TemplatesDep,
     form_doc: deps.FormDocDep,
+    sample_form_doc: deps.SampleFormDocDep,
 ):
     return templates.TemplateResponse(
         "home.html",
         dict(
             request=request,
             form_doc=form_doc,
+            sample_form_doc=sample_form_doc,
         ),
     )
 
@@ -157,3 +159,13 @@ def form_doc_errors(
             valid_doc=valid_doc,
         ),
     )
+
+
+@router.post("/create-sample-doc")
+def create_sample_doc(sample_form_doc: deps.SampleFormDocDep) -> dict:
+    form_doc_path = settings.BEANCOUNT_DIR / ".beanhub" / "forms.yaml"
+    if form_doc_path.exists():
+        return dict(code="already-exists")
+    form_doc_path.parent.mkdir(parents=True, exist_ok=True)
+    form_doc_path.write_text(sample_form_doc)
+    return dict(code="ok")
