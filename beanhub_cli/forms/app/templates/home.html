@@ -24,7 +24,7 @@
     <h2>No form definitions found</h2>
 
     <p>We cannot find the BeanHub Forms doc file in your current folder, <mark>{{ settings.BEANCOUNT_DIR }}</mark>.</p>
-    <p>To work with BeanHub Forms, you need to create the doc files at <mark>.beanhub/forms</mark> in your Beancount folder, then run beanhub-cli form server command in it like this:</p>
+    <p>To work with BeanHub Forms, you need to create the doc files at <mark>.beanhub/forms.yaml</mark> in your Beancount folder, then run beanhub-cli form server command in it like this:</p>
 
     <div><pre><code class="language-bash">cd /path/to/your/beancount/folder
 bh form server
@@ -61,6 +61,14 @@ bh form server
         Assets:AccountsReceivable:Contracting:XYZ      {{  hours }} XYZ.HOUR @ {{ rate }} USD
         Income:Contracting:XYZ
 {% endraw %}</code></pre></div>
+    <p>Or, you can use the button below to create the file automatically and reload this page to try it out:</p>
+
+    <div class="d-flex justify-content-center mt-2 mb-3">
+      <button class="btn btn-primary">Create sample forms doc</button>
+    </div>
+
+    <p>For more information about BeanHub Forms and how to use it, please read our blog post
+      <a href="https://beanhub.io/blog/2023/07/31/automating-beancount-data-input-with-beanhub-custom-forms/">Automating Beancount data input with custom forms makes your life 10 times easier!</a></p>
   {% else %}
     <h2>Forms</h2>
     <ul>
