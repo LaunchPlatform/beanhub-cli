@@ -5,6 +5,7 @@ import typing
 import pytest
 from starlette.testclient import TestClient
 
+from .types_def import MakeSessionCookies
 from beanhub_cli.forms.app.settings import Settings
 
 
@@ -147,3 +148,62 @@ def test_errors_with_valid_doc(
     resp = client.get("/errors")
     assert resp.status_code == 200
     assert "Your form doc is valid" in resp.text
+
+
+def test_render_form(
+    make_form_doc: typing.Callable,
+    settings: Settings,
+    client: TestClient,
+):
+    settings.BEANCOUNT_DIR = make_form_doc(
+        textwrap.dedent(
+            """\
+    forms:
+    - name: form0
+      fields:
+      - name: name
+        type: str
+      operations:
+      - type: append
+        file: main.bean
+        content: "; name={{ name }}"
+    """
+        )
+    )
+    resp = client.get("/form/form0")
+    assert resp.status_code == 200
+    assert "form0" in resp.text
+
+
+def test_submit_form(
+    tmp_path: pathlib.Path,
+    make_form_doc: typing.Callable,
+    settings: Settings,
+    client: TestClient,
+    csrf_token: str,
+    make_session_cookies: MakeSessionCookies,
+):
+    settings.BEANCOUNT_DIR = make_form_doc(
+        textwrap.dedent(
+            """\
+    forms:
+    - name: form0
+      fields:
+      - name: name
+        type: str
+      operations:
+      - type: append
+        file: main.bean
+        content: "; name={{ name }}"
+    """
+        )
+    )
+    resp = client.post(
+        "/form/form0",
+        data=dict(name="mock-name", csrf_token=csrf_token),
+        cookies=make_session_cookies(),
+    )
+    assert resp.status_code == 200
+
+    main_bean = tmp_path / "main.bean"
+    assert "; name=mock-name" in main_bean.read_text()
