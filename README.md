@@ -40,6 +40,7 @@ bh form server
 
 It should open the BeanHub Forms web page locally at http://localhost:8080 by default.
 It reads the `.beanhub/forms.yaml` file from the current directory and will modify beancount files in the directory, so make sure you cd to your beancount directory before running the command.
+To learn more about BeanHub Forms, please read our blog post [Automating Beancount data input with custom forms makes your life 10 times easier!](https://beanhub.io/blog/2023/07/31/automating-beancount-data-input-with-beanhub-custom-forms/).
 
 ### List BeanHub Forms
 
