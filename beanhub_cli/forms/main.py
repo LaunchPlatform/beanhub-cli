@@ -6,6 +6,8 @@ import webbrowser
 import click
 import rich
 import uvicorn
+import yaml.parser
+import yaml.scanner
 from beanhub_forms.data_types.form import FormDoc
 from click import get_current_context
 from pydantic import ValidationError
@@ -42,16 +44,21 @@ class StartupCallbackServer(uvicorn.Server):
 
 
 def _validate_form(env: Environment) -> FormDoc:
+    ctx = get_current_context()
     try:
         return validate_doc(pathlib.Path.cwd() / ".beanhub" / "forms.yaml")
+    except (yaml.parser.ParserError, yaml.scanner.ScannerError) as exc:
+        env.logger.error("Invalid form document with YAML errors:")
+        rich.print(str(exc))
+        ctx.exit(-1)
     except ValidationError as exc:
         env.logger.error("Invalid form document with errors:")
         tree = errors_to_tree(exc.errors())
         rich.print(enrich_tree(tree))
-        get_current_context().exit(-1)
+        ctx.exit(-1)
     except ValueError as exc:
         env.logger.error(f"Failed to validate with error: {exc.args[0]}")
-        get_current_context().exit(-1)
+        ctx.exit(-1)
 
 
 @cli.command(help="Validate form schema file")

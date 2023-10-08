@@ -136,17 +136,27 @@ def test_validate_cmd(tmp_path: pathlib.Path, cli_runner: CliRunner):
     with switch_cwd(tmp_path):
         result = cli_runner.invoke(cli, ["form", "validate"])
     assert result.exit_code == 0
-    assert "Form document is valid" in result.stderr
+    assert "Form document is valid" in result.stdout
 
 
-def test_validate_cmd_with_invalid_doc(tmp_path: pathlib.Path, cli_runner: CliRunner):
+@pytest.mark.parametrize(
+    "form_doc, expected_error",
+    [
+        ("", "Invalid form document with errors"),
+        ("{}", "Invalid form document with errors"),
+        ('"', "Invalid form document with YAML errors"),
+    ],
+)
+def test_validate_cmd_with_invalid_doc(
+    tmp_path: pathlib.Path, cli_runner: CliRunner, form_doc: str, expected_error: str
+):
     beanhub_dir = tmp_path / ".beanhub"
     beanhub_dir.mkdir()
-    form_doc = beanhub_dir / "forms.yaml"
-    form_doc.write_text("{}")
+    form_doc_file = beanhub_dir / "forms.yaml"
+    form_doc_file.write_text(form_doc)
 
     cli_runner.mix_stderr = False
     with switch_cwd(tmp_path):
         result = cli_runner.invoke(cli, ["form", "validate"])
     assert result.exit_code == -1
-    assert "Invalid form document with errors" in result.stderr
+    assert expected_error in result.stdout
