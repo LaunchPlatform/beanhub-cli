@@ -27,3 +27,48 @@ A modern accounting book service based on the most popular open source version c
 ```bash
 pip install beanhub-cli
 ```
+## Usage
+
+### BeanHub Forms web app
+
+To make it much easier for BeanHub users to test their BeanHub Forms locally, we added a simple local web app for that in beanhub-cli.
+You can run it by
+
+```bash
+bh form server
+```
+
+It should open the BeanHub Forms web page locally at http://localhost:8080 by default.
+It reads the `.beanhub/forms.yaml` file from the current directory and will modify beancount files in the directory, so make sure you cd to your beancount directory before running the command.
+
+### List BeanHub Forms
+
+To list BeanHub Forms, simply run
+
+```bash
+bh form list
+```
+### Validate BeanHub Forms doc
+
+To validate BeanHub Forms doc, simply run
+
+```bash
+bh form validate
+```
+
+### Format beancount files
+
+You can run [beancount-black](https://github.com/LaunchPlatform/beancount-black) formatter against given files by the following command
+
+```bash
+bh format main.bean
+```
+
+Currently, the formatter works mostly the same as beancount-black, except it doesn't create a backup file by default.
+We are working on adding new features, such as making it possible to follow Beancount include statements to format all Beancount files.
+
+### More features to come
+
+We are working on basic beancount file manipulation features, such as renaming account names.
+We will also add new features only for BeanHub users as well.
+But in general, if possible, we would like to make the features added to beancount-cli work locally without a BeanHub account as much as possible so that the beancount community can benefit from it.
