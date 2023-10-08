@@ -13,3 +13,9 @@ Command line tools for BeanHub.
 <p align="center">
   <a href="https://beanhub.io"><img src="./assets/forms-screenshot.png?raw=true" alt="BeanHub Forms Screenshot" /></a>
 </p>
+
+## Install
+
+```bash
+pip install beanhub-cli
+```
