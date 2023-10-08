@@ -3,13 +3,13 @@
 <div class="row">
   <div class="col-md-12">
   {% for item in messages %}
-    <div class="alert alert-{{ item['category'] }}">
-      <a class="close" title="Close" href="#" data-dismiss="alert">&times;</a>
+    <div class="alert alert-{{ item['category'] }} alert-dismissible fade show" role="alert">
       {% if item.get("markup_safe") %}
         {{ item['message'] | safe }}
       {% else %}
         {{ item['message'] }}
       {% endif %}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div><!-- end .alert -->
   {% endfor %}
   </div><!-- end col-md -->
