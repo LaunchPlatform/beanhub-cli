@@ -93,9 +93,13 @@ def test_form_list_with_bad_doc(
                 """\
     forms:
     - name: "foo
+      fields:
+      - name: "myfield"
+        type: date
+      
     """
             ),
-            "xxxx",
+            "while parsing a block mapping",
         ),
         (
             textwrap.dedent(
