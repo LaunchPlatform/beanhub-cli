@@ -11,7 +11,7 @@ Command line tools for BeanHub.
 ## Screenshots
 
 <p align="center">
-  <a href="https://beanhub.io"><img src="./assets/forms-screenshot.png?raw=true" alt="BeanHub Forms Screenshot" /></a>
+  <a href="https://beanhub.io"><img src="https://github.com/LaunchPlatform/beanhub-cli/raw/master/assets/forms-screenshot.png?raw=true" alt="BeanHub Forms Screenshot" /></a>
 </p>
 
 ## Install
