@@ -1,6 +1,5 @@
 import click
-
-from beanhub_cli.context import Context
+from click.core import Context
 
 
 class AliasedGroup(click.Group):
@@ -13,7 +12,7 @@ class AliasedGroup(click.Group):
             return None
         elif len(matches) == 1:
             return click.Group.get_command(self, ctx, matches[0])
-        ctx.logger.error(f"Too many matches: %s", ", ".join(sorted(matches)))
+        ctx.fail(f"Too many matches: {', '.join(sorted(matches))}")
 
     def resolve_command(self, ctx: Context, args: list[str]):
         # always return the full command name

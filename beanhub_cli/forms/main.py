@@ -1,6 +1,5 @@
 import pathlib
 import socket
-import sys
 import typing
 import webbrowser
 
@@ -8,14 +7,15 @@ import click
 import rich
 import uvicorn
 from beanhub_forms.data_types.form import FormDoc
+from click import get_current_context
 from pydantic import ValidationError
 from rich import box
 from rich.markup import escape
 from rich.padding import Padding
 from rich.table import Table
 
-from ..context import Context
-from ..context import pass_context
+from ..environment import Environment
+from ..environment import pass_env
 from .app.main import make_app
 from .cli import cli
 from .validator import enrich_tree
@@ -41,30 +41,30 @@ class StartupCallbackServer(uvicorn.Server):
         self.startup_callback()
 
 
-def _validate_form(ctx: Context) -> FormDoc:
+def _validate_form(env: Environment) -> FormDoc:
     try:
         return validate_doc(pathlib.Path.cwd() / ".beanhub" / "forms.yaml")
     except ValidationError as exc:
-        ctx.logger.error("Invalid form document with errors:")
+        env.logger.error("Invalid form document with errors:")
         tree = errors_to_tree(exc.errors())
         rich.print(enrich_tree(tree))
-        sys.exit(-1)
+        get_current_context().exit(-1)
     except ValueError as exc:
-        ctx.logger.error(f"Failed to validate with error: {exc.args[0]}")
-        sys.exit(-1)
+        env.logger.error(f"Failed to validate with error: {exc.args[0]}")
+        get_current_context().exit(-1)
 
 
 @cli.command(help="Validate form schema file")
-@pass_context
-def validate(ctx: Context):
-    _validate_form(ctx)
+@pass_env
+def validate(env: Environment):
+    _validate_form(env)
     rich.print(":white_heavy_check_mark: Form document is valid")
 
 
 @cli.command(name="list", help="List forms")
-@pass_context
-def list_forms(ctx: Context):
-    form_doc = _validate_form(ctx)
+@pass_env
+def list_forms(env: Environment):
+    form_doc = _validate_form(env)
     for form in form_doc.forms:
         form_title = f":downwards_button: [{FORM_NAME_STYLE}]{escape(form.name)}[/{FORM_NAME_STYLE}]"
         if form.display_name:
@@ -137,16 +137,16 @@ def list_forms(ctx: Context):
     show_default=True,
     help="Log level for Uvicorn web server.",
 )
-@pass_context
+@pass_env
 def run_server(
-    ctx: Context, port: int, host: str, open_browser: bool, uvicorn_log_level: str
+    env: Environment, port: int, host: str, open_browser: bool, uvicorn_log_level: str
 ):
     app = make_app()
 
     def after_startup():
         if open_browser:
             url = f"http://{host}:{port}"
-            ctx.logger.info("Opening URL %s in the browser", url)
+            env.logger.info("Opening URL %s in the browser", url)
             webbrowser.open(url)
 
     config = uvicorn.Config(app=app, port=port, host=host, log_level=uvicorn_log_level)

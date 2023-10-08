@@ -5,10 +5,10 @@ import click
 from rich.logging import RichHandler
 
 from .aliase import AliasedGroup
-from .context import Context
-from .context import LOG_LEVEL_MAP
-from .context import LogLevel
-from .context import pass_context
+from .environment import Environment
+from .environment import LOG_LEVEL_MAP
+from .environment import LogLevel
+from .environment import pass_env
 
 
 @click.group(help="Command line tools for BeanHub", cls=AliasedGroup)
@@ -20,14 +20,14 @@ from .context import pass_context
     ),
     default=lambda: os.environ.get("LOG_LEVEL", "INFO"),
 )
-@pass_context
-def cli(ctx: Context, log_level: str):
+@pass_env
+def cli(env: Environment, log_level: str):
     FORMAT = "%(message)s"
     logging.basicConfig(
-        level=LOG_LEVEL_MAP[ctx.log_level],
+        level=LOG_LEVEL_MAP[env.log_level],
         format=FORMAT,
         datefmt="[%X]",
         handlers=[RichHandler()],
         force=True,
     )
-    ctx.log_level = LogLevel(log_level)
+    env.log_level = LogLevel(log_level)
