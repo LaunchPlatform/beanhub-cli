@@ -124,3 +124,26 @@ def test_errors(
     resp = client.get("/errors")
     assert resp.status_code == 200
     assert expected_error in resp.text
+
+
+def test_errors_with_valid_doc(
+    make_form_doc: typing.Callable,
+    settings: Settings,
+    client: TestClient,
+):
+    settings.BEANCOUNT_DIR = make_form_doc(
+        textwrap.dedent(
+            """\
+    forms:
+    - name: form0
+      fields: []
+      operations: []
+    - name: form1
+      fields: []
+      operations: []
+    """
+        )
+    )
+    resp = client.get("/errors")
+    assert resp.status_code == 200
+    assert "Your form doc is valid" in resp.text
