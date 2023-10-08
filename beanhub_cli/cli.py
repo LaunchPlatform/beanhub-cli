@@ -4,13 +4,14 @@ import os
 import click
 from rich.logging import RichHandler
 
+from .aliase import AliasedGroup
 from .context import Context
 from .context import LOG_LEVEL_MAP
 from .context import LogLevel
 from .context import pass_context
 
 
-@click.group(help="Command line tools for BeanHub")
+@click.group(help="Command line tools for BeanHub", cls=AliasedGroup)
 @click.option(
     "-l",
     "--log-level",
