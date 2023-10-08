@@ -1,9 +1,16 @@
 import click
 from click.core import Context
 
+CMD_ALIAS_MAP = {
+    "ls": "list",
+    "format": "fmt",
+}
+
 
 class AliasedGroup(click.Group):
     def get_command(self, ctx: Context, cmd_name: str):
+        if cmd_name in CMD_ALIAS_MAP:
+            cmd_name = CMD_ALIAS_MAP[cmd_name]
         rv = click.Group.get_command(self, ctx, cmd_name)
         if rv is not None:
             return rv
