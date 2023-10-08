@@ -20,6 +20,7 @@ from .environment import pass_env
     ),
     default=lambda: os.environ.get("LOG_LEVEL", "INFO"),
 )
+@click.version_option(prog_name="beanhub-cli", package_name="beanhub-cli")
 @pass_env
 def cli(env: Environment, log_level: str):
     FORMAT = "%(message)s"
