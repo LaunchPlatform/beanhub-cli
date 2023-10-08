@@ -3,7 +3,7 @@ from click.core import Context
 
 CMD_ALIAS_MAP = {
     "ls": "list",
-    "format": "fmt",
+    "fmt": "format",
 }
 
 

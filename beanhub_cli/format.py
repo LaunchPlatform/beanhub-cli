@@ -52,6 +52,8 @@ def main(
     stdin_mode: bool,
     backup: bool,
 ):
+    # TODO: support follow include statements
+
     parser = make_parser()
     formatter = Formatter()
     if stdin_mode:
@@ -81,7 +83,3 @@ def main(
                 with open(name, "wt") as input_file:
                     shutil.copyfileobj(output_file, input_file)
     env.logger.info("done")
-
-
-if __name__ == "__main__":
-    main()

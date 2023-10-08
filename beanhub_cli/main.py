@@ -1,6 +1,6 @@
+from . import format
 from .cli import cli
-from .format import main
-from .forms import main
+from .forms import main as forms
 
 __ALL__ = [cli]
 
