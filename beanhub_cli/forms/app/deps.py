@@ -6,6 +6,7 @@ import urllib.parse
 from importlib.metadata import version
 
 import yaml.parser
+import yaml.scanner
 from beanhub_forms.data_types.form import FormDoc
 from fastapi import Depends
 from fastapi import status
@@ -102,7 +103,7 @@ def get_form_doc(
     try:
         _, raw_doc = raw_form_doc
         return FormDoc.model_validate(yaml.safe_load(io.StringIO(raw_doc)))
-    except (ValueError, yaml.parser.ParserError):
+    except (ValueError, yaml.parser.ParserError, yaml.scanner.ScannerError):
         raise HTTPException(
             status_code=status.HTTP_302_FOUND,
             headers={"Location": str(get_url_for("form_doc_errors"))},

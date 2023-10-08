@@ -4,6 +4,7 @@ import pathlib
 import typing
 
 import yaml.parser
+import yaml.scanner
 from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
 from beanhub_forms.data_types.form import FormDoc
@@ -141,7 +142,7 @@ def form_doc_errors(
     try:
         FormDoc.model_validate(yaml.safe_load(io.StringIO(raw_doc)))
         valid_doc = True
-    except yaml.parser.ParserError as exc:
+    except (yaml.parser.ParserError, yaml.scanner.ScannerError) as exc:
         yaml_error = exc
     except ValidationError as exc:
         validation_error = exc

@@ -42,3 +42,81 @@ def test_form_list(
     assert "form0" in resp.text
     assert "form1" in resp.text
     assert "form2" not in resp.text
+
+
+def test_form_list_without_doc(
+    settings: Settings,
+    client: TestClient,
+):
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert "No form definitions found" in resp.text
+
+
+@pytest.mark.parametrize(
+    "form_doc",
+    [
+        '"bad-yaml',
+        textwrap.dedent(
+            """\
+    forms:
+    - name: "foo
+    """
+        ),
+        textwrap.dedent(
+            """\
+    forms:
+    - fields: []
+      operations: []
+    """
+        ),
+    ],
+)
+def test_form_list_with_bad_doc(
+    make_form_doc: typing.Callable,
+    settings: Settings,
+    client: TestClient,
+    form_doc: str,
+):
+    settings.BEANCOUNT_DIR = make_form_doc(form_doc)
+    resp = client.get("/", follow_redirects=False)
+    assert resp.status_code == 302
+    assert resp.headers["location"] == "http://testserver/errors"
+
+
+@pytest.mark.parametrize(
+    "form_doc, expected_error",
+    [
+        ('"bad-yaml', "while scanning a quoted scalar"),
+        (
+            textwrap.dedent(
+                """\
+    forms:
+    - name: "foo
+    """
+            ),
+            "xxxx",
+        ),
+        (
+            textwrap.dedent(
+                """\
+    forms:
+    - fields: []
+      operations: []
+    """
+            ),
+            "Field required",
+        ),
+    ],
+)
+def test_errors(
+    make_form_doc: typing.Callable,
+    settings: Settings,
+    client: TestClient,
+    form_doc: str,
+    expected_error: str,
+):
+    settings.BEANCOUNT_DIR = make_form_doc(form_doc)
+    resp = client.get("/errors")
+    assert resp.status_code == 200
+    assert expected_error in resp.text
