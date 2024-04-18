@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "beanhub-cli"
-version = "1.0.0"
+version = "1.0.1"
 description = "Command line tools for BeanHub"
 authors = ["Fang-Pen Lin <fangpen@launchplatform.com>"]
 license = "MIT"
