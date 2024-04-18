@@ -84,7 +84,6 @@ def test_file_does_not_exist(tmp_path: pathlib.Path):
                     "loc": ("forms",),
                     "msg": "Field required",
                     "input": {},
-                    "url": "https://errors.pydantic.dev/2.4/v/missing",
                 }
             ],
         ),
@@ -96,21 +95,18 @@ def test_file_does_not_exist(tmp_path: pathlib.Path):
                     "loc": ("forms", 0, "name"),
                     "msg": "Field required",
                     "input": {},
-                    "url": "https://errors.pydantic.dev/2.4/v/missing",
                 },
                 {
                     "type": "missing",
                     "loc": ("forms", 0, "fields"),
                     "msg": "Field required",
                     "input": {},
-                    "url": "https://errors.pydantic.dev/2.4/v/missing",
                 },
                 {
                     "type": "missing",
                     "loc": ("forms", 0, "operations"),
                     "msg": "Field required",
                     "input": {},
-                    "url": "https://errors.pydantic.dev/2.4/v/missing",
                 },
             ],
         ),
@@ -122,7 +118,10 @@ def test_bad_schema(tmp_path: pathlib.Path, schema: dict, expected_errors: list)
         yaml.dump(schema, fo)
     with pytest.raises(ValidationError) as exc:
         validate_doc(doc_file)
-    assert exc.value.errors() == expected_errors
+    def del_url(d):
+        del d["url"]
+        return d
+    assert list(map(del_url, exc.value.errors())) == expected_errors
 
 
 def test_validate_cmd(tmp_path: pathlib.Path, cli_runner: CliRunner):
