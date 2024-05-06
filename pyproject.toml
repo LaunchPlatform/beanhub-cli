@@ -10,7 +10,7 @@ readme = "README.md"
 bh = "beanhub_cli.main:cli"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 pydantic = "^2.4.0"
 starlette-wtf = "^0.4.3"
 fastapi = ">= 0.98.0, <1.0.0"
