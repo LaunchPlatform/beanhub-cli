@@ -22,6 +22,7 @@ uvicorn = "^0.23.2"
 beanhub-forms = "^0.1.3"
 pydantic-settings = "^2.0.3"
 rich = "^13.6.0"
+beanhub-import = "^0.0.2"
 
 [tool.poetry.dev-dependencies]
 
