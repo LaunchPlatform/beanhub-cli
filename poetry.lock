@@ -776,7 +776,6 @@ files = [
 
 [package.dependencies]
 anyio = ">=3.4.0,<5"
-typing-extensions = {version = ">=3.10.0", markers = "python_version < \"3.10\""}
 
 [package.extras]
 full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.7)", "pyyaml"]
@@ -860,5 +859,5 @@ email = ["email-validator"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = "^3.9"
-content-hash = "6d51ebb8a23191aabdcc71a1e4a420f2473f599b88acdaab163397e908567b27"
+python-versions = "^3.10"
+content-hash = "526dfd72e66b762907b5e54fc9e64625bb0f917e00300810e9d71e52e7b9d65e"
