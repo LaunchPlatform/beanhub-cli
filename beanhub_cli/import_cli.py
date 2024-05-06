@@ -49,7 +49,7 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
     env.logger.info("Found %s existing imported transactions", len(imported_txns))
 
     formatter = Formatter()
-    change_sets = compute_changes(generated_txns=generated_txns, imported_txns=imported_txns)
+    change_sets = compute_changes(generated_txns=generated_txns, imported_txns=imported_txns, work_dir=workdir_path)
     for target_file, change_set in change_sets.items():
         if not target_file.exists():
             if change_set.remove or change_set.update:
