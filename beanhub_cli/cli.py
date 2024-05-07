@@ -23,6 +23,7 @@ from .environment import pass_env
 @click.version_option(prog_name="beanhub-cli", package_name="beanhub-cli")
 @pass_env
 def cli(env: Environment, log_level: str):
+    env.log_level = LogLevel(log_level)
     FORMAT = "%(message)s"
     logging.basicConfig(
         level=LOG_LEVEL_MAP[env.log_level],
@@ -31,4 +32,3 @@ def cli(env: Environment, log_level: str):
         handlers=[RichHandler()],
         force=True,
     )
-    env.log_level = LogLevel(log_level)
