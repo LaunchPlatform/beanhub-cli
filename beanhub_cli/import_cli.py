@@ -1,21 +1,33 @@
 import pathlib
 
 import click
+import rich
 import yaml
 from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
+from beanhub_extract.data_types import Transaction
+from beanhub_extract.utils import strip_base_path
+from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
 from beanhub_import.post_processor import apply_change_set
 from beanhub_import.post_processor import compute_changes
-from beanhub_import.post_processor import extract_imported_transactions
+from beanhub_import.post_processor import extract_existing_transactions
 from beanhub_import.post_processor import txn_to_text
 from beanhub_import.processor import process_imports
+from rich import box
+from rich.markup import escape
+from rich.padding import Padding
+from rich.table import Table
 
 from .cli import cli
 from .environment import Environment
 from .environment import pass_env
 
 IMPORT_DOC_FILE = pathlib.Path(".beanhub") / "imports.yaml"
+FORM_NAME_STYLE = "green"
+FORM_DISPLAY_NAME_STYLE = "bright_black"
+TABLE_HEADER_STYLE = "yellow"
+TABLE_COLUMN_STYLE = "cyan"
 
 
 @cli.command(
@@ -50,29 +62,52 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
         doc_payload = yaml.safe_load(fo)
     import_doc = ImportDoc.model_validate(doc_payload)
     workdir_path = pathlib.Path(workdir)
-    env.logger.info("Loaded import doc from %s", config)
+    env.logger.info(
+        "Loaded import doc from [green]%s[/]",
+        config,
+        extra={"markup": True, "highlighter": None},
+    )
 
     generated_txns = []
-    for generated_txn in process_imports(import_doc=import_doc, input_dir=workdir_path):
-        env.logger.debug("Generated transaction %s", generated_txn)
-        generated_txns.append(generated_txn)
+    unprocessed_txns = []
+    for txn in process_imports(import_doc=import_doc, input_dir=workdir_path):
+        if isinstance(txn, GeneratedTransaction):
+            generated_file_path = (workdir_path / txn.file).resolve()
+            env.logger.info(
+                "Generated transaction [green]%s[/] to file [green]%s[/]",
+                txn.id,
+                strip_base_path(workdir_path.resolve(), generated_file_path),
+                extra={"markup": True, "highlighter": None},
+            )
+            generated_txns.append(txn)
+        elif isinstance(txn, Transaction):
+            env.logger.info(
+                "Skipped input transaction at [green]%s[/]:[blue]%s[/]",
+                txn.file,
+                txn.lineno,
+                extra={"markup": True, "highlighter": None},
+            )
+            unprocessed_txns.append(txn)
+        else:
+            raise ValueError(f"Unexpected type {type(txn)}")
     env.logger.info("Generated %s transactions", len(generated_txns))
+    env.logger.info("Skipped %s transactions", len(unprocessed_txns))
 
     beanfile_path = pathlib.Path(beanfile)
 
     parser = make_parser()
-    imported_txns = list(
-        extract_imported_transactions(
+    existing_txns = list(
+        extract_existing_transactions(
             parser=parser,
             bean_file=beanfile_path,
         )
     )
-    env.logger.info("Found %s existing imported transactions", len(imported_txns))
+    env.logger.info("Found %s existing imported transactions", len(existing_txns))
 
     formatter = Formatter()
     change_sets = compute_changes(
         generated_txns=generated_txns,
-        imported_txns=imported_txns,
+        imported_txns=existing_txns,
         work_dir=workdir_path,
     )
     for target_file, change_set in change_sets.items():
@@ -100,4 +135,44 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
 
         with target_file.open("wt") as fo:
             formatter.format(new_tree, fo)
+
+    table = Table(
+        title="Generated transactions",
+        box=box.SIMPLE,
+        header_style=TABLE_HEADER_STYLE,
+        expand=True,
+    )
+    # TODO: add src info
+    table.add_column("File", style=TABLE_COLUMN_STYLE)
+    table.add_column("Id", style=TABLE_COLUMN_STYLE)
+    table.add_column("Date", style=TABLE_COLUMN_STYLE)
+    table.add_column("Narration", style=TABLE_COLUMN_STYLE)
+    for txn in generated_txns:
+        table.add_row(
+            escape(str(txn.file)),
+            str(txn.id),
+            escape(str(txn.date)),
+            escape(txn.narration),
+        )
+    rich.print(Padding(table, (1, 0, 0, 4)))
+
+    table = Table(
+        title="Unprocessed transactions",
+        box=box.SIMPLE,
+        header_style=TABLE_HEADER_STYLE,
+        expand=True,
+    )
+    table.add_column("File", style=TABLE_COLUMN_STYLE)
+    table.add_column("Line", style=TABLE_COLUMN_STYLE)
+    table.add_column("Date", style=TABLE_COLUMN_STYLE)
+    table.add_column("Desc", style=TABLE_COLUMN_STYLE)
+    for txn in unprocessed_txns:
+        table.add_row(
+            escape(txn.file),
+            str(txn.lineno),
+            escape(str(txn.date)),
+            escape(txn.desc),
+        )
+    rich.print(Padding(table, (1, 0, 0, 4)))
+
     env.logger.info("done")
