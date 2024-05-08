@@ -164,12 +164,14 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
     )
     table.add_column("File", style=TABLE_COLUMN_STYLE)
     table.add_column("Line", style=TABLE_COLUMN_STYLE)
+    table.add_column("Extractor", style=TABLE_COLUMN_STYLE)
     table.add_column("Date", style=TABLE_COLUMN_STYLE)
     table.add_column("Desc", style=TABLE_COLUMN_STYLE)
     for txn in unprocessed_txns:
         table.add_row(
             escape(txn.file),
             str(txn.lineno),
+            escape(str(txn.extractor)),
             escape(str(txn.date)),
             escape(txn.desc),
         )
