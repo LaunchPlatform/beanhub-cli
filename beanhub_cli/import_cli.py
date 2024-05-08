@@ -1,4 +1,5 @@
 import pathlib
+import sys
 
 import click
 import rich
@@ -93,16 +94,27 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
     env.logger.info("Generated %s transactions", len(generated_txns))
     env.logger.info("Skipped %s transactions", len(unprocessed_txns))
 
-    beanfile_path = pathlib.Path(beanfile)
+    beanfile_path = (workdir_path / pathlib.Path(beanfile)).resolve()
+    if workdir_path.resolve().absolute() not in beanfile_path.absolute().parents:
+        env.logger.error(
+            "The provided beanfile path %s is not a sub-path of workdir %s",
+            beanfile_path,
+            workdir_path,
+        )
+        sys.exit(-1)
 
+    env.logger.info("Collecting existing imported transactions from Beancount book ...")
     parser = make_parser()
     existing_txns = list(
         extract_existing_transactions(
             parser=parser,
             bean_file=beanfile_path,
+            root_dir=workdir_path,
         )
     )
-    env.logger.info("Found %s existing imported transactions", len(existing_txns))
+    env.logger.info(
+        "Found %s existing imported transactions in Beancount book", len(existing_txns)
+    )
 
     formatter = Formatter()
     change_sets = compute_changes(
