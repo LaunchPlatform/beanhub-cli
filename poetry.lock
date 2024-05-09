@@ -50,13 +50,13 @@ click = ">=7.0.0,<9.0.0"
 
 [[package]]
 name = "beancount-parser"
-version = "1.2.0"
+version = "1.2.3"
 description = "Standalone Lark based Beancount syntax parser (not relying on Beancount library), MIT license"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "beancount_parser-1.2.0-py3-none-any.whl", hash = "sha256:3f096a4422060cf262a9266e5e42e2d80fd6bd2d2739f2ff2a0851817e7e6c10"},
-    {file = "beancount_parser-1.2.0.tar.gz", hash = "sha256:4e99386f46e1a1970c2516a8c678769136b8e1dcc2e0f5a1e1676c55bca52eba"},
+    {file = "beancount_parser-1.2.3-py3-none-any.whl", hash = "sha256:8d8415a06dbd9fe07170071fdb45e7063c6e81239ee48bda46292ce9d1bd68dc"},
+    {file = "beancount_parser-1.2.3.tar.gz", hash = "sha256:c24208d4561e5bd5ed4e544b1cd77afcf7b309211f32f7927585ef525c13578d"},
 ]
 
 [package.dependencies]
@@ -64,13 +64,13 @@ lark = ">=1.1.2,<2.0.0"
 
 [[package]]
 name = "beanhub-extract"
-version = "0.0.5"
+version = "0.0.7"
 description = "The simple library for extracting all kind of bank account transaction export files, mostly for beanhub-import to inject and generate transactions"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "beanhub_extract-0.0.5-py3-none-any.whl", hash = "sha256:d231a4afa42a15a8c1c80d2f5506aface5ecf336b6d2fea861eeebb3c2eedf78"},
-    {file = "beanhub_extract-0.0.5.tar.gz", hash = "sha256:e23ebe428b33bcf81c15472aec85ed377058563e24ed419f1fa556ee74ae9d06"},
+    {file = "beanhub_extract-0.0.7-py3-none-any.whl", hash = "sha256:2f6f5c4cde100fa979d9695283cc8d6b7844289e2b1e51f68bba1959d900ae09"},
+    {file = "beanhub_extract-0.0.7.tar.gz", hash = "sha256:303d438e2fee56b00a43346e88b40ad516d503f0957d0bdfbcd7c093c2fa8941"},
 ]
 
 [package.dependencies]
@@ -95,19 +95,19 @@ wtforms = ">=3.0.1,<4.0.0"
 
 [[package]]
 name = "beanhub-import"
-version = "0.1.0"
+version = "0.1.3"
 description = "The simple library for import extracted transactions provided by beanhub-extract and generate corresponding Beancount transactions based on predefined rules"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "beanhub_import-0.1.0-py3-none-any.whl", hash = "sha256:7e32f11fa6a2bc04a092560ca0a45194505b28aaa7f3abdb9555e0295b3efe13"},
-    {file = "beanhub_import-0.1.0.tar.gz", hash = "sha256:a260337483f52f0ac7c05a6a09f0a0bd9eeacdc96b56c6c0e12a140406c179bf"},
+    {file = "beanhub_import-0.1.3-py3-none-any.whl", hash = "sha256:ab36e05e6e7ccdbdf6d41f404dac9b3932756aa8e90be589bdb1eb6d8e5cb101"},
+    {file = "beanhub_import-0.1.3.tar.gz", hash = "sha256:3a42879fe88174b8d3e4c8413020f7e6ed953f381a98849ab5c8a49be0d0dacb"},
 ]
 
 [package.dependencies]
-beancount-black = ">=1.0.2,<2.0.0"
-beancount-parser = ">=1.1.0,<2.0.0"
-beanhub-extract = ">=0.0.5,<0.0.6"
+beancount-black = ">=1.0.2,<1.1.0"
+beancount-parser = ">=1.2.3,<1.3.0"
+beanhub-extract = ">=0.0.7,<0.1.0"
 jinja2 = ">=3.1.3,<4.0.0"
 pydantic = ">=2.7.1,<3.0.0"
 pytz = ">=2024.1,<2025.0"
@@ -860,4 +860,4 @@ email = ["email-validator"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "97f09a321c4489cdf8bd3bf4e41dfb20701b1e2be193c8d66d3d6184d649c556"
+content-hash = "9fe86c2774954ba2241e31671aeefece9442a55c39bd727d1e90fb4465f754eb"
