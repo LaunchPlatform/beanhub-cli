@@ -25,8 +25,6 @@ from .environment import Environment
 from .environment import pass_env
 
 IMPORT_DOC_FILE = pathlib.Path(".beanhub") / "imports.yaml"
-FORM_NAME_STYLE = "green"
-FORM_DISPLAY_NAME_STYLE = "bright_black"
 TABLE_HEADER_STYLE = "yellow"
 TABLE_COLUMN_STYLE = "cyan"
 
@@ -103,7 +101,9 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
         )
         sys.exit(-1)
 
-    env.logger.info("Collecting existing imported transactions from Beancount book ...")
+    env.logger.info(
+        "Collecting existing imported transactions from Beancount books ..."
+    )
     parser = make_parser()
     existing_txns = list(
         extract_existing_transactions(
@@ -113,7 +113,7 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
         )
     )
     env.logger.info(
-        "Found %s existing imported transactions in Beancount book", len(existing_txns)
+        "Found %s existing imported transactions in Beancount books", len(existing_txns)
     )
 
     formatter = Formatter()
