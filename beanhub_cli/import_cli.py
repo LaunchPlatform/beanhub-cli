@@ -69,8 +69,8 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
         extra={"markup": True, "highlighter": None},
     )
 
-    generated_txns = []
-    unprocessed_txns = []
+    generated_txns: list[GeneratedTransaction] = []
+    unprocessed_txns: list[Transaction] = []
     for txn in process_imports(import_doc=import_doc, input_dir=workdir_path):
         if isinstance(txn, GeneratedTransaction):
             generated_file_path = (workdir_path / txn.file).resolve()
@@ -157,12 +157,14 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
     # TODO: add src info
     table.add_column("File", style=TABLE_COLUMN_STYLE)
     table.add_column("Id", style=TABLE_COLUMN_STYLE)
+    table.add_column("Source", style=TABLE_COLUMN_STYLE)
     table.add_column("Date", style=TABLE_COLUMN_STYLE)
     table.add_column("Narration", style=TABLE_COLUMN_STYLE)
     for txn in generated_txns:
         table.add_row(
             escape(str(txn.file)),
             str(txn.id),
+            escape(str(":".join(txn.sources))),
             escape(str(txn.date)),
             escape(txn.narration),
         )
@@ -179,6 +181,9 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
     table.add_column("Extractor", style=TABLE_COLUMN_STYLE)
     table.add_column("Date", style=TABLE_COLUMN_STYLE)
     table.add_column("Desc", style=TABLE_COLUMN_STYLE)
+    table.add_column("Bank Desc", style=TABLE_COLUMN_STYLE)
+    table.add_column("Amount", style=TABLE_COLUMN_STYLE, justify="right")
+    table.add_column("Currency", style=TABLE_COLUMN_STYLE)
     for txn in unprocessed_txns:
         table.add_row(
             escape(txn.file),
@@ -186,6 +191,9 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
             escape(str(txn.extractor)),
             escape(str(txn.date)),
             escape(txn.desc),
+            escape(txn.bank_desc),
+            escape(str(txn.amount)),
+            escape(txn.currency),
         )
     rich.print(Padding(table, (1, 0, 0, 4)))
 
