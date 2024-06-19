@@ -189,11 +189,11 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
             escape(txn.file),
             str(txn.lineno),
             escape(str(txn.extractor)),
-            escape(str(txn.date)),
-            escape(txn.desc),
-            escape(txn.bank_desc),
-            escape(str(txn.amount)),
-            escape(txn.currency),
+            escape(str(txn.date)) if txn.date is not None else "",
+            escape(txn.desc) if txn.desc is not None else "",
+            escape(txn.bank_desc) if txn.bank_desc is not None else "",
+            escape(str(txn.amount)) if txn.amount is not None else "",
+            escape(txn.currency) if txn.currency is not None else "",
         )
     rich.print(Padding(table, (1, 0, 0, 4)))
 
