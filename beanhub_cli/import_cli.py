@@ -8,6 +8,7 @@ from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
 from beanhub_extract.data_types import Transaction
 from beanhub_extract.utils import strip_base_path
+from beanhub_import.data_types import DeletedTransaction
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
 from beanhub_import.post_processor import apply_change_set
@@ -68,6 +69,7 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
     )
 
     generated_txns: list[GeneratedTransaction] = []
+    deleted_txns: list[DeletedTransaction] = []
     unprocessed_txns: list[Transaction] = []
     for txn in process_imports(import_doc=import_doc, input_dir=workdir_path):
         if isinstance(txn, GeneratedTransaction):
@@ -79,6 +81,13 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
                 extra={"markup": True, "highlighter": None},
             )
             generated_txns.append(txn)
+        elif isinstance(txn, DeletedTransaction):
+            env.logger.info(
+                "Deleted transaction [green]%s[/]",
+                txn.id,
+                extra={"markup": True, "highlighter": None},
+            )
+            deleted_txns.append(txn)
         elif isinstance(txn, Transaction):
             env.logger.info(
                 "Skipped input transaction at [green]%s[/]:[blue]%s[/]",
@@ -90,6 +99,7 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
         else:
             raise ValueError(f"Unexpected type {type(txn)}")
     env.logger.info("Generated %s transactions", len(generated_txns))
+    env.logger.info("Deleted %s transactions", len(deleted_txns))
     env.logger.info("Skipped %s transactions", len(unprocessed_txns))
 
     beanfile_path = (workdir_path / pathlib.Path(beanfile)).resolve()
@@ -120,6 +130,7 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
     change_sets = compute_changes(
         generated_txns=generated_txns,
         imported_txns=existing_txns,
+        deleted_txns=deleted_txns,
         work_dir=workdir_path,
     )
     for target_file, change_set in change_sets.items():
@@ -147,6 +158,25 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
 
         with target_file.open("wt") as fo:
             formatter.format(new_tree, fo)
+
+    table = Table(
+        title="Deleted transactions",
+        box=box.SIMPLE,
+        header_style=TABLE_HEADER_STYLE,
+        expand=True,
+    )
+    table.add_column("File", style=TABLE_COLUMN_STYLE)
+    table.add_column("Id", style=TABLE_COLUMN_STYLE)
+    deleted_txn_ids = frozenset(txn.id for txn in deleted_txns)
+    for target_file, change_set in change_sets.items():
+        for txn in change_set.remove:
+            if txn.id not in deleted_txn_ids:
+                continue
+            table.add_row(
+                escape(str(target_file)),
+                str(txn.id),
+            )
+    rich.print(Padding(table, (1, 0, 0, 4)))
 
     table = Table(
         title="Generated transactions",
