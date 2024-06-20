@@ -126,7 +126,6 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
         "Found %s existing imported transactions in Beancount books", len(existing_txns)
     )
 
-    formatter = Formatter()
     change_sets = compute_changes(
         generated_txns=generated_txns,
         imported_txns=existing_txns,
@@ -157,6 +156,7 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
             new_tree = apply_change_set(tree=tree, change_set=change_set)
 
         with target_file.open("wt") as fo:
+            formatter = Formatter()
             formatter.format(new_tree, fo)
 
     table = Table(
