@@ -76,8 +76,12 @@ You can run [beancount-black](https://github.com/LaunchPlatform/beancount-black)
 bh format main.bean
 ```
 
-Currently, the formatter works mostly the same as beancount-black, except it doesn't create a backup file by default.
-We are working on adding new features, such as making it possible to follow Beancount include statements to format all Beancount files.
+Without the file arguments, the format command will try to format `main.bean` in the current folder, and it will recursively follow all the `include` statements to format all the bean files.
+Like this:
+
+```bash
+bh format
+```
 
 ### More features to come
 
