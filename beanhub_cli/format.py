@@ -7,6 +7,9 @@ import typing
 import click
 from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
+from beancount_parser.parser import traverse
+from lark import Lark
+from lark import Tree
 
 from .cli import cli
 from .environment import Environment
@@ -32,6 +35,16 @@ def create_backup(src: pathlib.Path, suffix: str) -> pathlib.Path:
         return backup_path
 
 
+def file_tree_iterator(
+    parser: Lark, filenames: list[pathlib.Path]
+) -> typing.Generator[tuple[pathlib.Path, Tree], None, None]:
+    for filename in filenames:
+        with open(filename, "rt") as input_file:
+            input_content = input_file.read()
+            tree = parser.parse(input_content)
+            yield filename, tree
+
+
 @cli.command(name="format", help="Format Beancount files with beancount-black")
 @click.argument("filename", type=click.Path(exists=False, dir_okay=False), nargs=-1)
 @click.option(
@@ -53,33 +66,43 @@ def main(
     backup: bool,
 ):
     # TODO: support follow include statements
-
     parser = make_parser()
-    formatter = Formatter()
     if stdin_mode:
         env.logger.info("Processing in stdin mode")
         input_content = sys.stdin.read()
         tree = parser.parse(input_content)
+        formatter = Formatter()
         formatter.format(tree, sys.stdout)
     else:
-        for name in filename:
-            env.logger.info("Processing file %s", name)
-            with open(name, "rt") as input_file:
-                input_content = input_file.read()
-                tree = parser.parse(input_content)
+        if filename:
+            iterator = file_tree_iterator(
+                parser=parser,
+                filenames=map(lambda item: pathlib.Path(str(item)), filename),
+            )
+        else:
+            env.logger.info("No files provided, traverse starting from main.bean")
+            iterator = traverse(
+                parser=parser,
+                bean_file=pathlib.Path("main.bean"),
+                root_dir=pathlib.Path.cwd(),
+            )
+        for filepath, tree in iterator:
+            env.logger.info("Processing file %s", filepath)
             with tempfile.NamedTemporaryFile(mode="wt+", suffix=".bean") as output_file:
+                formatter = Formatter()
                 formatter.format(tree, output_file)
                 output_file.seek(0)
                 output_content = output_file.read()
+                input_content = filepath.read_text()
                 if input_content == output_content:
-                    env.logger.info("File %s is not changed, skip", name)
+                    env.logger.info("File %s is not changed, skip", filepath)
                     continue
                 if backup:
-                    backup_path = create_backup(
-                        src=pathlib.Path(str(name)), suffix=backup_suffix
+                    backup_path = create_backup(src=filepath, suffix=backup_suffix)
+                    env.logger.info(
+                        "File %s changed, backup to %s", filepath, backup_path
                     )
-                    env.logger.info("File %s changed, backup to %s", name, backup_path)
                 output_file.seek(0)
-                with open(name, "wt") as input_file:
+                with open(filepath, "wt") as input_file:
                     shutil.copyfileobj(output_file, input_file)
     env.logger.info("done")
