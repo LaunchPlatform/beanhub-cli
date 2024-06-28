@@ -1,5 +1,3 @@
-import contextlib
-import os
 import pathlib
 
 import pytest
@@ -8,20 +6,11 @@ from beanhub_forms.data_types.form import FormDoc
 from click.testing import CliRunner
 from pydantic import ValidationError
 
+from ..helper import switch_cwd
 from beanhub_cli.forms.validator import format_loc
 from beanhub_cli.forms.validator import merge_index_loc
 from beanhub_cli.forms.validator import validate_doc
 from beanhub_cli.main import cli
-
-
-@contextlib.contextmanager
-def switch_cwd(cwd: pathlib.Path):
-    current_cwd = pathlib.Path.cwd()
-    try:
-        os.chdir(cwd)
-        yield
-    finally:
-        os.chdir(current_cwd)
 
 
 @pytest.mark.parametrize(
@@ -118,9 +107,11 @@ def test_bad_schema(tmp_path: pathlib.Path, schema: dict, expected_errors: list)
         yaml.dump(schema, fo)
     with pytest.raises(ValidationError) as exc:
         validate_doc(doc_file)
+
     def del_url(d):
         del d["url"]
         return d
+
     assert list(map(del_url, exc.value.errors())) == expected_errors
 
 
