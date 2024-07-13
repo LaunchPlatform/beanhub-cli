@@ -8,6 +8,7 @@ from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
 from beanhub_extract.data_types import Transaction
 from beanhub_extract.utils import strip_base_path
+from beanhub_import.data_types import BeancountTransaction
 from beanhub_import.data_types import DeletedTransaction
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
@@ -55,8 +56,15 @@ TABLE_COLUMN_STYLE = "cyan"
     default="main.bean",
     help="The path to main entry beancount file",
 )
+@click.option(
+    "--remove-dangling",
+    is_flag=True,
+    help="Remove dangling transactions (existing imported transactions in Beancount files without corresponding generated transactions)",
+)
 @pass_env
-def main(env: Environment, config: str, workdir: str, beanfile: str):
+def main(
+    env: Environment, config: str, workdir: str, beanfile: str, remove_dangling: bool
+):
     config_path = pathlib.Path(config)
     with config_path.open("rt") as fo:
         doc_payload = yaml.safe_load(fo)
@@ -146,14 +154,18 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
             new_tree = parser.parse(bean_content)
         else:
             env.logger.info(
-                "Applying change sets (add=%s, update=%s, remove=%s) to %s",
+                "Applying change sets (add=%s, update=%s, remove=%s, dangling=%s) with remove_dangling=%s to %s",
                 len(change_set.add),
                 len(change_set.update),
                 len(change_set.remove),
+                len(change_set.dangling),
+                remove_dangling,
                 target_file,
             )
             tree = parser.parse(target_file.read_text())
-            new_tree = apply_change_set(tree=tree, change_set=change_set)
+            new_tree = apply_change_set(
+                tree=tree, change_set=change_set, remove_dangling=remove_dangling
+            )
 
         with target_file.open("wt") as fo:
             formatter = Formatter()
@@ -173,7 +185,24 @@ def main(env: Environment, config: str, workdir: str, beanfile: str):
             if txn.id not in deleted_txn_ids:
                 continue
             table.add_row(
-                escape(str(target_file)),
+                escape(str(target_file)) + f":{txn.lineno}",
+                str(txn.id),
+            )
+    rich.print(Padding(table, (1, 0, 0, 4)))
+
+    dangling_action = "Delete" if remove_dangling else "Ignored"
+    table = Table(
+        title=f"Dangling Transactions ({dangling_action})",
+        box=box.SIMPLE,
+        header_style=TABLE_HEADER_STYLE,
+        expand=True,
+    )
+    table.add_column("File", style=TABLE_COLUMN_STYLE)
+    table.add_column("Id", style=TABLE_COLUMN_STYLE)
+    for target_file, change_set in change_sets.items():
+        for txn in change_set.dangling:
+            table.add_row(
+                escape(str(target_file)) + f":{txn.lineno}",
                 str(txn.id),
             )
     rich.print(Padding(table, (1, 0, 0, 4)))
