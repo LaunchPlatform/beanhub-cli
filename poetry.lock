@@ -96,13 +96,13 @@ wtforms = ">=3.0.1,<4.0.0"
 
 [[package]]
 name = "beanhub-import"
-version = "0.4.0"
+version = "0.4.1"
 description = "The simple library for import extracted transactions provided by beanhub-extract and generate corresponding Beancount transactions based on predefined rules"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "beanhub_import-0.4.0-py3-none-any.whl", hash = "sha256:bed2a4b1a69118ceee26cbae11ef3b2a6f94eb753be53c6b92395a3a3cbf4b84"},
-    {file = "beanhub_import-0.4.0.tar.gz", hash = "sha256:dc50956867062a8849f9c193a55f8c0dd17a770ef8b6c6dd06e952b534a5177e"},
+    {file = "beanhub_import-0.4.1-py3-none-any.whl", hash = "sha256:4b0e1ac46d821b0be5a265d9cb94b3e8a947bcba192da4aa8f5fa9f3e7ea35e5"},
+    {file = "beanhub_import-0.4.1.tar.gz", hash = "sha256:26a6d5f77499c9840a6ecaac32b29ddc3a0241c06d338b5b89b3839470e99ba6"},
 ]
 
 [package.dependencies]
@@ -1387,4 +1387,4 @@ email = ["email-validator"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "eb01f033459d89d45a1ee464419ab7d709f6db3992a5c17e414135abd41972f8"
+content-hash = "0f180122786690c787b18637109d36b1be86f32b7b81dade6edf5d2706347d8d"
