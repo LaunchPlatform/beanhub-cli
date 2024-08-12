@@ -6,12 +6,11 @@ import rich
 import yaml
 from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
-from beanhub_extract.data_types import Transaction
 from beanhub_extract.utils import strip_base_path
-from beanhub_import.data_types import BeancountTransaction
 from beanhub_import.data_types import DeletedTransaction
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
+from beanhub_import.data_types import UnprocessedTransaction
 from beanhub_import.post_processor import apply_change_set
 from beanhub_import.post_processor import compute_changes
 from beanhub_import.post_processor import extract_existing_transactions
@@ -78,7 +77,7 @@ def main(
 
     generated_txns: list[GeneratedTransaction] = []
     deleted_txns: list[DeletedTransaction] = []
-    unprocessed_txns: list[Transaction] = []
+    unprocessed_txns: list[UnprocessedTransaction] = []
     for txn in process_imports(import_doc=import_doc, input_dir=workdir_path):
         if isinstance(txn, GeneratedTransaction):
             generated_file_path = (workdir_path / txn.file).resolve()
@@ -96,11 +95,12 @@ def main(
                 extra={"markup": True, "highlighter": None},
             )
             deleted_txns.append(txn)
-        elif isinstance(txn, Transaction):
+        elif isinstance(txn, UnprocessedTransaction):
             env.logger.info(
-                "Skipped input transaction at [green]%s[/]:[blue]%s[/]",
-                txn.file,
-                txn.lineno,
+                "Skipped input transaction %s at [green]%s[/]:[blue]%s[/]",
+                txn.import_id,
+                txn.txn.file,
+                txn.txn.lineno,
                 extra={"markup": True, "highlighter": None},
             )
             unprocessed_txns.append(txn)
@@ -237,6 +237,7 @@ def main(
     )
     table.add_column("File", style=TABLE_COLUMN_STYLE)
     table.add_column("Line", style=TABLE_COLUMN_STYLE)
+    table.add_column("Id", style=TABLE_COLUMN_STYLE)
     table.add_column("Extractor", style=TABLE_COLUMN_STYLE)
     table.add_column("Date", style=TABLE_COLUMN_STYLE)
     table.add_column("Desc", style=TABLE_COLUMN_STYLE)
@@ -245,14 +246,15 @@ def main(
     table.add_column("Currency", style=TABLE_COLUMN_STYLE)
     for txn in unprocessed_txns:
         table.add_row(
-            escape(txn.file),
-            str(txn.lineno),
-            escape(str(txn.extractor)),
-            escape(str(txn.date)) if txn.date is not None else "",
-            escape(txn.desc) if txn.desc is not None else "",
-            escape(txn.bank_desc) if txn.bank_desc is not None else "",
-            escape(str(txn.amount)) if txn.amount is not None else "",
-            escape(txn.currency) if txn.currency is not None else "",
+            escape(txn.txn.file),
+            str(txn.txn.lineno),
+            txn.import_id,
+            escape(str(txn.txn.extractor)),
+            escape(str(txn.txn.date)) if txn.txn.date is not None else "",
+            escape(txn.txn.desc) if txn.txn.desc is not None else "",
+            escape(txn.txn.bank_desc) if txn.txn.bank_desc is not None else "",
+            escape(str(txn.txn.amount)) if txn.txn.amount is not None else "",
+            escape(txn.txn.currency) if txn.txn.currency is not None else "",
         )
     rich.print(Padding(table, (1, 0, 0, 4)))
 
