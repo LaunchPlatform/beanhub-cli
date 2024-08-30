@@ -130,8 +130,13 @@ def main(
             root_dir=workdir_path,
         )
     )
+    imported_txns_with_override = frozenset(
+        txn.id for txn in existing_txns if txn.override is not None
+    )
     env.logger.info(
-        "Found %s existing imported transactions in Beancount books", len(existing_txns)
+        "Found %s existing imported transactions in Beancount books, %s with override",
+        len(existing_txns),
+        len(imported_txns_with_override),
     )
 
     change_sets = compute_changes(
@@ -230,7 +235,7 @@ def main(
     rich.print(Padding(table, (1, 0, 0, 4)))
 
     table = Table(
-        title="Unprocessed transactions",
+        title="Open transactions",
         box=box.SIMPLE,
         header_style=TABLE_HEADER_STYLE,
         expand=True,
@@ -245,6 +250,8 @@ def main(
     table.add_column("Amount", style=TABLE_COLUMN_STYLE, justify="right")
     table.add_column("Currency", style=TABLE_COLUMN_STYLE)
     for txn in unprocessed_txns:
+        if txn.import_id in imported_txns_with_override:
+            continue
         table.add_row(
             escape(txn.txn.file),
             str(txn.txn.lineno),
