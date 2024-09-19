@@ -1,0 +1,44 @@
+site_name: BeanHub CLI
+repo_url: https://github.com/launchplatform/beanhub-cli
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/favicon.svg
+  palette:
+    primary: deep purple
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.prune
+    - navigation.footer
+  custom_dir: overrides
+  icon:
+    repo: fontawesome/brands/github
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+nav:
+  - 'BeanHub CLI': 'index.md'
+  - 'Getting started': 'getting-started.md'
+  - 'Commands':
+    - 'Import': 'commands/import.md'
+    - 'Forms': 'commands/form.md'
+    - 'Format': 'commands/format.md'
+copyright: Copyright &copy; 2024 Launch Platform LLC
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/launchplatform
+    - icon: fontawesome/solid/house
+      link: https://beanhub.io
+  generator: false
+  analytics:
+    provider: custom
