@@ -5,6 +5,7 @@ description = "Command line tools for BeanHub"
 authors = ["Fang-Pen Lin <fangpen@launchplatform.com>"]
 license = "MIT"
 readme = "README.md"
+documentation = "https://beanhub-cli-docs.beanhub.io"
 
 [tool.poetry.scripts]
 bh = "beanhub_cli.main:cli"
