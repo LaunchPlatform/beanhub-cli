@@ -1,6 +1,8 @@
 # beanhub-cli [![CircleCI](https://dl.circleci.com/status-badge/img/gh/LaunchPlatform/beanhub-cli/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/LaunchPlatform/beanhub-cli/tree/master)
 Command line tools for BeanHub or Beancount users.
 
+Please read the [documentation here](https://beanhub-cli-docs.beanhub.io).
+
 ## Features
 
 - **Local BeanHub Form web app** - You can run a [BeanHub Form](https://beanhub.io/blog/2023/07/31/automating-beancount-data-input-with-beanhub-custom-forms/) web app locally to try out your forms
