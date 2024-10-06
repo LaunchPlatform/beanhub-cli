@@ -2,6 +2,7 @@ import logging
 import os
 
 import click
+from rich.logging import Console
 from rich.logging import RichHandler
 
 from .aliase import AliasedGroup
@@ -25,10 +26,11 @@ from .environment import pass_env
 def cli(env: Environment, log_level: str):
     env.log_level = LogLevel(log_level)
     FORMAT = "%(message)s"
+    console = Console(stderr=True)
     logging.basicConfig(
         level=LOG_LEVEL_MAP[env.log_level],
         format=FORMAT,
         datefmt="[%X]",
-        handlers=[RichHandler()],
+        handlers=[RichHandler(console=console)],
         force=True,
     )
