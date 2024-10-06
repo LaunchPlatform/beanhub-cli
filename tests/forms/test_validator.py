@@ -149,4 +149,4 @@ def test_validate_cmd_with_invalid_doc(
     with switch_cwd(tmp_path):
         result = cli_runner.invoke(cli, ["form", "validate"])
     assert result.exit_code == -1
-    assert expected_error in result.stdout
+    assert expected_error in result.stderr
