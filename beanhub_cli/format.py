@@ -102,9 +102,16 @@ def rename_commodity_transform(
 
 def combine_transforms(
     funcs: list[typing.Callable], tree_or_token: TreeOrToken
-) -> TreeOrToken:
+) -> TreeOrToken | None:
+    transformed = False
     for func in funcs:
-        tree_or_token = func(tree_or_token)
+        result = func(tree_or_token)
+        if result is None:
+            continue
+        transformed = True
+        tree_or_token = result
+    if not transformed:
+        return
     return tree_or_token
 
 
@@ -184,7 +191,11 @@ def main(
         for filepath, tree in iterator:
             env.logger.info("Processing file %s", filepath)
             if tree_transformers:
-                env.logger.info("Running transforms against file %s ...", filepath)
+                env.logger.info(
+                    "Running %s transforms against file %s ...",
+                    len(tree_transformers),
+                    filepath,
+                )
                 tree = walk_tree(
                     tree,
                     functools.partial(combine_transforms, tree_transformers),
