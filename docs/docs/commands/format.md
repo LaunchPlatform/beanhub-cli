@@ -28,6 +28,14 @@ bh format -ra Liabilities:CreditCard:AmericanExpress Liabilities:CreditCard:Amex
 ```
 
 You can rename multiple accounts at once by passing `-ra` multiple times.
+Like this:
+
+```bash
+bh format \
+  -ra Liabilities:CreditCard:AmericanExpress Liabilities:CreditCard:Amex \
+  -ra Expenses:Food Expenses:Food:Dining
+  
+```
 
 You can also rename currency by passing `--rename-currency <from> <to>`.
 Like the option for renaming an account, you can also pass in `-rc` for short.
