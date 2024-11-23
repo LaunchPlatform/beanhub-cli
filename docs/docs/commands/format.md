@@ -46,3 +46,11 @@ bh format -rc BTC BITCOIN
 ```
 
 You can also combine multiple account and currency renaming options in the same format run.
+
+```bash
+bh format \
+  -ra Liabilities:CreditCard:AmericanExpress Liabilities:CreditCard:Amex \
+  -ra Expenses:Food Expenses:Food:Dining \
+  -rc BTC BITCOIN
+  
+```
