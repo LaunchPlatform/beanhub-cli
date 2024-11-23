@@ -41,7 +41,7 @@ You can also rename currency by passing `--rename-currency <from> <to>`.
 Like the option for renaming an account, you can also pass in `-rc` for short.
 Here's an example of renaming currency from `BTC` to `BITCOIN` by running.
 
- ```bash
+```bash
 bh format -rc BTC BITCOIN
 ```
 
