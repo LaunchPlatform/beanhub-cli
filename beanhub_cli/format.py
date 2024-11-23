@@ -73,30 +73,30 @@ def walk_tree(
 
 
 def rename_account_transform(
-    from_name: str, to_name: str, tree_or_token: TreeOrToken
+    replacements: dict[str, str], tree_or_token: TreeOrToken
 ) -> TreeOrToken | None:
     if not isinstance(tree_or_token, Token):
         return
     if tree_or_token.type != "ACCOUNT":
         return
-    if tree_or_token.value != from_name:
+    if tree_or_token.value not in replacements:
         return
     new_token = copy.deepcopy(tree_or_token)
-    new_token.value = to_name
+    new_token.value = replacements[tree_or_token.value]
     return new_token
 
 
 def rename_commodity_transform(
-    from_name: str, to_name: str, tree_or_token: TreeOrToken
+    replacements: dict[str, str], tree_or_token: TreeOrToken
 ) -> TreeOrToken | None:
     if not isinstance(tree_or_token, Token):
         return
     if tree_or_token.type != "CURRENCY":
         return
-    if tree_or_token.value != from_name:
+    if tree_or_token.value not in replacements:
         return
     new_token = copy.deepcopy(tree_or_token)
-    new_token.value = to_name
+    new_token.value = replacements[tree_or_token.value]
     return new_token
 
 
@@ -114,16 +114,20 @@ def combine_transforms(
     "--backup-suffix", type=str, default=".backup", help="suffix of backup file"
 )
 @click.option(
+    "-ra",
     "--rename-account",
-    type=str,
-    help='rename account name in "<from,to>" format, e.g. "Assets:Cash,Assets:Wallet"',
-    nargs=-1,
+    type=(str, str),
+    help="rename account names",
+    nargs=2,
+    multiple=True,
 )
 @click.option(
+    "-rc",
     "--rename-currency",
-    type=str,
-    help='rename currency name in "<from,to>" format, e.g. "BCH,BTC"',
-    nargs=-1,
+    type=(str, str),
+    help="rename currency names",
+    nargs=2,
+    multiple=True,
 )
 @click.option(
     "-s",
@@ -137,24 +141,23 @@ def main(
     env: Environment,
     filename: list[click.Path],
     backup_suffix: str,
-    rename_account: list[str],
-    rename_currency: list[str],
+    rename_account: list[tuple[str, str]],
+    rename_currency: list[tuple[str, str]],
     stdin_mode: bool,
     backup: bool,
 ):
-    rename_accounts = [item.split(",", 1) for item in rename_account]
-    rename_currencies = [item.split(",", 1) for item in rename_currency]
-
     tree_transformers: list[typing.Callable] = []
-    for ori, replacement in rename_accounts:
-        env.logger.info("Renaming account from %s to %s", ori, replacement)
+    if rename_account:
+        for from_val, to_val in rename_account:
+            env.logger.info("Renaming account from %s to %s", from_val, to_val)
         tree_transformers.append(
-            functools.partial(rename_account_transform, ori, replacement)
+            functools.partial(rename_account_transform, dict(rename_account))
         )
-    for ori, replacement in rename_currencies:
-        env.logger.info("Renaming currency from %s to %s", ori, replacement)
+    if rename_currency:
+        for from_val, to_val in rename_currency:
+            env.logger.info("Renaming currency from %s to %s", from_val, to_val)
         tree_transformers.append(
-            functools.partial(rename_commodity_transform, ori, replacement)
+            functools.partial(rename_commodity_transform, dict(rename_currency))
         )
 
     # TODO: support follow include statements
@@ -184,7 +187,7 @@ def main(
                 env.logger.info("Running transforms against file %s ...", filepath)
                 tree = walk_tree(
                     tree,
-                    functools.partial(combine_transforms, tree_transformers, tree),
+                    functools.partial(combine_transforms, tree_transformers),
                 )
             with tempfile.NamedTemporaryFile(mode="wt+", suffix=".bean") as output_file:
                 formatter = Formatter()
