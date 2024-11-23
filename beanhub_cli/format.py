@@ -1,3 +1,5 @@
+import copy
+import functools
 import pathlib
 import shutil
 import sys
@@ -9,11 +11,14 @@ from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
 from beancount_parser.parser import traverse
 from lark import Lark
+from lark import Token
 from lark import Tree
 
 from .cli import cli
 from .environment import Environment
 from .environment import pass_env
+
+TreeOrToken = Token | Tree
 
 
 def create_backup(src: pathlib.Path, suffix: str) -> pathlib.Path:
@@ -45,10 +50,91 @@ def file_tree_iterator(
             yield filename, tree
 
 
+def walk_tree(
+    tree_or_token: TreeOrToken,
+    processor: typing.Callable[[TreeOrToken], TreeOrToken | None],
+):
+    result = processor(tree_or_token)
+    if result is not None:
+        # processor returned, let's use it instead
+        return result
+    if isinstance(tree_or_token, Tree):
+        return Tree(
+            data=tree_or_token.data,
+            children=list(
+                map(
+                    functools.partial(walk_tree, processor=processor),
+                    tree_or_token.children,
+                )
+            ),
+            meta=tree_or_token.meta,
+        )
+    return copy.deepcopy(tree_or_token)
+
+
+def rename_account_transform(
+    replacements: dict[str, str], tree_or_token: TreeOrToken
+) -> TreeOrToken | None:
+    if not isinstance(tree_or_token, Token):
+        return
+    if tree_or_token.type != "ACCOUNT":
+        return
+    if tree_or_token.value not in replacements:
+        return
+    new_token = copy.deepcopy(tree_or_token)
+    new_token.value = replacements[tree_or_token.value]
+    return new_token
+
+
+def rename_commodity_transform(
+    replacements: dict[str, str], tree_or_token: TreeOrToken
+) -> TreeOrToken | None:
+    if not isinstance(tree_or_token, Token):
+        return
+    if tree_or_token.type != "CURRENCY":
+        return
+    if tree_or_token.value not in replacements:
+        return
+    new_token = copy.deepcopy(tree_or_token)
+    new_token.value = replacements[tree_or_token.value]
+    return new_token
+
+
+def combine_transforms(
+    funcs: list[typing.Callable], tree_or_token: TreeOrToken
+) -> TreeOrToken | None:
+    transformed = False
+    for func in funcs:
+        result = func(tree_or_token)
+        if result is None:
+            continue
+        transformed = True
+        tree_or_token = result
+    if not transformed:
+        return
+    return tree_or_token
+
+
 @cli.command(name="format", help="Format Beancount files with beancount-black")
 @click.argument("filename", type=click.Path(exists=False, dir_okay=False), nargs=-1)
 @click.option(
     "--backup-suffix", type=str, default=".backup", help="suffix of backup file"
+)
+@click.option(
+    "-ra",
+    "--rename-account",
+    type=(str, str),
+    help="rename account names",
+    nargs=2,
+    multiple=True,
+)
+@click.option(
+    "-rc",
+    "--rename-currency",
+    type=(str, str),
+    help="rename currency names",
+    nargs=2,
+    multiple=True,
 )
 @click.option(
     "-s",
@@ -60,11 +146,27 @@ def file_tree_iterator(
 @pass_env
 def main(
     env: Environment,
-    filename: typing.List[click.Path],
+    filename: list[click.Path],
     backup_suffix: str,
+    rename_account: list[tuple[str, str]],
+    rename_currency: list[tuple[str, str]],
     stdin_mode: bool,
     backup: bool,
 ):
+    tree_transformers: list[typing.Callable] = []
+    if rename_account:
+        for from_val, to_val in rename_account:
+            env.logger.info("Renaming account from %s to %s", from_val, to_val)
+        tree_transformers.append(
+            functools.partial(rename_account_transform, dict(rename_account))
+        )
+    if rename_currency:
+        for from_val, to_val in rename_currency:
+            env.logger.info("Renaming currency from %s to %s", from_val, to_val)
+        tree_transformers.append(
+            functools.partial(rename_commodity_transform, dict(rename_currency))
+        )
+
     # TODO: support follow include statements
     parser = make_parser()
     if stdin_mode:
@@ -88,6 +190,16 @@ def main(
             )
         for filepath, tree in iterator:
             env.logger.info("Processing file %s", filepath)
+            if tree_transformers:
+                env.logger.info(
+                    "Running %s transforms against file %s ...",
+                    len(tree_transformers),
+                    filepath,
+                )
+                tree = walk_tree(
+                    tree,
+                    functools.partial(combine_transforms, tree_transformers),
+                )
             with tempfile.NamedTemporaryFile(mode="wt+", suffix=".bean") as output_file:
                 formatter = Formatter()
                 formatter.format(tree, output_file)
