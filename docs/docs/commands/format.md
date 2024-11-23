@@ -16,7 +16,7 @@ bh format
 ## Rename account and currency (commodity)
 
 The main purpose of the format command is to format Beancount files.
-It reads and parses the Beancount file as a syntax tree transform and eventually outputs it back as a Beancount file.
+It reads and parses the Beancount file as a syntax tree, then transforms it and eventually outputs it back as a Beancount file.
 This process also provides a great opportunity to perform extra transformation to the tree, such as renaming an account or currency.
 Therefore, we also implement account and currency renaming in this command.
 
