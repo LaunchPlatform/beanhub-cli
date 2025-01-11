@@ -1,3 +1,4 @@
+import dataclasses
 import enum
 import sys
 import time
@@ -11,6 +12,7 @@ from rich.markup import escape
 from rich.padding import Padding
 from rich.table import Table
 
+from ..config import Config
 from ..config import load_config
 from ..environment import Environment
 from ..environment import pass_env
@@ -44,29 +46,46 @@ BAD_TERMINAL_SYNC_STATES = frozenset(
 )
 
 
-def ensure_token(env: Environment) -> str:
+@dataclasses.dataclass
+class ConnectConfig:
+    token: str
+    repo: str
+
+
+def ensure_config(env: Environment, repo: str | None) -> ConnectConfig:
     config = load_config()
     if config is None or config.access_token is None:
         env.logger.error(
             'You need to login into your BeanHub account with "bh login" command first'
         )
         sys.exit(-1)
-    return config.access_token.token
+    if repo is None and (config.repo is None or config.repo.default is None):
+        env.logger.error(
+            'You need to provide a repo by -r argument, such as "myuser/myrepo" or define a default repo in your config file'
+        )
+        sys.exit(-1)
+    return ConnectConfig(
+        token=config.access_token.token,
+        repo=repo if repo is None else config.repo.default,
+    )
 
 
 @cli.command(help="Sync transactions for all BeanHub Connect banks")
+@click.option(
+    "-r",
+    "--repo",
+    type=str,
+    help='Which repository to run sync on, in "<username>/<repo_name>" format',
+)
 @pass_env
-def sync(env: Environment):
-    token = ensure_token(env)
+def sync(env: Environment, repo: str | None):
+    config = ensure_config(env, repo=repo)
 
-    # XXX:
-    username = "fangpenlin"
-    repo = "mybook"
-
+    # TODO: generate API client from OpenAPI spec instead
     url = urllib.parse.urljoin(
-        env.api_base_url, f"v1/repos/{username}/{repo}/connect/sync_batches"
+        env.api_base_url, f"v1/repos/{config.repo}/connect/sync_batches"
     )
-    resp = requests.post(url, headers={"access-token": token})
+    resp = requests.post(url, headers={"access-token": config.token})
     if resp.status_code == 422:
         env.logger.error("Failed to sync with error: %s", resp.json())
         sys.exit(-1)
@@ -80,11 +99,11 @@ def sync(env: Environment):
     )
 
     url = urllib.parse.urljoin(
-        env.api_base_url, f"v1/repos/{username}/{repo}/connect/sync_batches/{batch_id}"
+        env.api_base_url, f"v1/repos/{config.repo}/connect/sync_batches/{batch_id}"
     )
     while True:
         time.sleep(5)
-        resp = requests.get(url, headers={"access-token": token})
+        resp = requests.get(url, headers={"access-token": config.token})
         # TODO: provide friendly error messages here
         resp.raise_for_status()
         payload = resp.json()
@@ -136,12 +155,11 @@ def sync(env: Environment):
                     escape(sync["error_message"]),
                 )
             rich.print(Padding(table, (1, 0, 0, 4)))
-
-            env.logger.info("done")
             break
         env.logger.info(
             "Still processing, [green]%s[/] out of [green]%s[/]", progress, total
         )
+    env.logger.info("done")
 
 
 @cli.command(help="")

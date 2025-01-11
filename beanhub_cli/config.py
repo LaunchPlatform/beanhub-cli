@@ -9,8 +9,13 @@ class AccessToken(BaseModel):
     token: str
 
 
+class Repository(BaseModel):
+    default: str | None = None
+
+
 class Config(BaseModel):
     access_token: AccessToken | None = None
+    repo: Repository | None = None
 
 
 def get_config_path() -> pathlib.Path:
