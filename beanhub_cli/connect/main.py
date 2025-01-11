@@ -31,15 +31,16 @@ def sync(env: Environment):
     repo = "mybook"
 
     url = urllib.parse.urljoin(
-        env.api_base_url, f"v1/{username}/{repo}/connect/sync_batches"
+        env.api_base_url, f"v1/repos/{username}/{repo}/connect/sync_batches"
     )
     resp = requests.post(url, headers={"access-token": token})
     # TODO: provide friendly error messages here
     resp.raise_for_status()
-
     batch_id = resp.json()["id"]
+    env.logger.info("Created sync batch %s, waiting for updates ...", batch_id)
+
     url = urllib.parse.urljoin(
-        env.api_base_url, f"v1/{username}/{repo}/connect/sync_batches/{batch_id}"
+        env.api_base_url, f"v1/repos/{username}/{repo}/connect/sync_batches/{batch_id}"
     )
     while True:
         time.sleep(5)
