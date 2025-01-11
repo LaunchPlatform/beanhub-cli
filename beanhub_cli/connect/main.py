@@ -7,6 +7,7 @@ import urllib.parse
 import click
 import requests
 import rich
+from nacl.encoding import URLSafeBase64Encoder
 from nacl.public import PrivateKey
 from rich import box
 from rich.markup import escape
@@ -195,6 +196,7 @@ def dump(env: Environment, repo: str | None, sync: bool):
         run_sync(env, config)
 
     private_key = PrivateKey.generate()
+    public_key = private_key.public_key.encode(URLSafeBase64Encoder).decode("ascii")
 
     # TODO: generate API client from OpenAPI spec instead
     url = urllib.parse.urljoin(
@@ -202,7 +204,7 @@ def dump(env: Environment, repo: str | None, sync: bool):
     )
     resp = requests.post(
         url,
-        json=dict(public_key=private_key.public_key),
+        json=dict(public_key=public_key),
         headers={"access-token": config.token},
     )
     if resp.status_code == 422:
@@ -214,7 +216,7 @@ def dump(env: Environment, repo: str | None, sync: bool):
     env.logger.info(
         "Created dump [green]%s[/] with public_key [green]%s[/], waiting for updates ...",
         dump_id,
-        private_key.public_key,
+        public_key,
         extra={"markup": True, "highlighter": None},
     )
 
