@@ -7,6 +7,7 @@ import urllib.parse
 import click
 import requests
 import rich
+from nacl.public import PrivateKey
 from rich import box
 from rich.markup import escape
 from rich.padding import Padding
@@ -192,4 +193,30 @@ def dump(env: Environment, repo: str | None, sync: bool):
     config = ensure_config(env, repo=repo)
     if sync:
         run_sync(env, config)
+
+    private_key = PrivateKey.generate()
+
+    # TODO: generate API client from OpenAPI spec instead
+    url = urllib.parse.urljoin(
+        env.api_base_url, f"v1/repos/{config.repo}/connect/dumps"
+    )
+    resp = requests.post(
+        url,
+        json=dict(public_key=private_key.public_key),
+        headers={"access-token": config.token},
+    )
+    if resp.status_code == 422:
+        env.logger.error("Failed to dump with error: %s", resp.json())
+        sys.exit(-1)
+    resp.raise_for_status()
+
+    dump_id = resp.json()["id"]
+    env.logger.info(
+        "Created dump [green]%s[/] with public_key [green]%s[/], waiting for updates ...",
+        dump_id,
+        private_key.public_key,
+        extra={"markup": True, "highlighter": None},
+    )
+
+    # TODO:
     env.logger.info("done")
