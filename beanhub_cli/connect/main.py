@@ -1,6 +1,9 @@
 import sys
+import time
+import urllib.parse
 
 import click
+import requests
 
 from ..config import load_config
 from ..environment import Environment
@@ -19,24 +22,34 @@ def ensure_token(env: Environment) -> str:
 
 
 @cli.command(help="Sync transactions for all BeanHub Connect banks")
-@click.option(
-    "-r",
-    "--repo",
-    type=str,
-    help="Name of repository, need to provide it if you have multiple repositories",
-)
 @pass_env
-def sync(env: Environment, repo: str | None):
+def sync(env: Environment):
     token = ensure_token(env)
+
+    # XXX:
+    username = "fangpenlin"
+    repo = "mybook"
+
+    url = urllib.parse.urljoin(
+        env.api_base_url, f"v1/{username}/{repo}/connect/sync_batches"
+    )
+    resp = requests.post(url, headers={"access-token": token})
+    # TODO: provide friendly error messages here
+    resp.raise_for_status()
+
+    batch_id = resp.json()["id"]
+    url = urllib.parse.urljoin(
+        env.api_base_url, f"v1/{username}/{repo}/connect/sync_batches/{batch_id}"
+    )
+    while True:
+        time.sleep(5)
+        resp = requests.get(url, headers={"access-token": token})
+        # TODO: provide friendly error messages here
+        resp.raise_for_status()
+        print("@" * 10, resp.json())
 
 
 @cli.command(help="")
-@click.option(
-    "-r",
-    "--repo",
-    type=str,
-    help="Name of repository, need to provide it if you have multiple repositories",
-)
 @click.option(
     "-s",
     "--sync",
