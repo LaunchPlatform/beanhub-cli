@@ -21,6 +21,7 @@ def main(env: Environment):
     config_path = get_config_path()
     config = load_config()
     if config is not None and config.access_token is not None:
+        # TODO: ask the user if they want to log out the original session first
         env.logger.error(
             "Already logged in, if you want to login again, please delete the config file at %s first",
             config_path,
