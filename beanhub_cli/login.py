@@ -6,6 +6,11 @@ import webbrowser
 import requests
 
 from .cli import cli
+from .config import AccessToken
+from .config import Config
+from .config import get_config_path
+from .config import load_config
+from .config import save_config
 from .environment import Environment
 from .environment import pass_env
 
@@ -13,7 +18,14 @@ from .environment import pass_env
 @cli.command(name="login", help="Login BeanHub")
 @pass_env
 def main(env: Environment):
-    # TODO: check and see if we have already logged in
+    config_path = get_config_path()
+    config = load_config()
+    if config is not None and config.access_token is not None:
+        env.logger.error(
+            "Already logged in, if you want to login again, please delete the config file at %s first",
+            config_path,
+        )
+        return
 
     env.logger.info("Creating auth session ...")
     url = urllib.parse.urljoin(env.api_base_url, "v1/auth/sessions")
@@ -44,9 +56,8 @@ def main(env: Environment):
         time.sleep(5)
         resp = requests.get(poll_url)
         if resp.status_code == 200:
-            env.logger.info("Session access granted")
-            # TODO:
-            print("@" * 20, resp.json()["token"])
+            save_config(Config(access_token=AccessToken(token=resp.json()["token"])))
+            env.logger.info("Session access granted, saved config to %s", config_path)
             break
         elif resp.status_code == 202:
             env.logger.debug("Session access not granted yet, try again later")
