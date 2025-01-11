@@ -23,6 +23,8 @@ def load_config(file_path: pathlib.Path | None = None) -> Config | None:
     if not file_path.exists():
         return
 
+    file_path.write_text("")
+    file_path.chmod(0o400)
     with file_path.open("rb") as fo:
         obj = tomllib.load(fo)
         return Config.model_validate(obj)

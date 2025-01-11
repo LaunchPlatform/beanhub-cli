@@ -15,7 +15,7 @@ from .environment import Environment
 from .environment import pass_env
 
 
-@cli.command(name="login", help="Login BeanHub")
+@cli.command(name="login", help="Login your BeanHub account")
 @pass_env
 def main(env: Environment):
     config_path = get_config_path()
