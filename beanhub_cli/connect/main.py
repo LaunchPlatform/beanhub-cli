@@ -1,3 +1,4 @@
+import enum
 import sys
 import time
 import urllib.parse
@@ -9,6 +10,30 @@ from ..config import load_config
 from ..environment import Environment
 from ..environment import pass_env
 from .cli import cli
+
+
+@enum.unique
+class PlaidItemSyncState(enum.Enum):
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    SYNC_COMPLETE = "SYNC_COMPLETE"
+    SYNC_FAILED = "SYNC_FAILED"
+    IMPORT_COMPLETE = "IMPORT_COMPLETE"
+    IMPORT_COMPLETE_NO_CHANGES = "IMPORT_COMPLETE_NO_CHANGES"
+    IMPORT_FAILED = "IMPORT_FAILED"
+
+
+GOOD_TERMINAL_SYNC_STATES = frozenset(
+    [
+        PlaidItemSyncState.IMPORT_COMPLETE,
+        PlaidItemSyncState.IMPORT_COMPLETE_NO_CHANGES,
+    ]
+)
+BAD_TERMINAL_SYNC_STATES = frozenset(
+    [
+        PlaidItemSyncState.IMPORT_FAILED,
+    ]
+)
 
 
 def ensure_token(env: Environment) -> str:
@@ -35,6 +60,7 @@ def sync(env: Environment):
     )
     resp = requests.post(url, headers={"access-token": token})
     # TODO: provide friendly error messages here
+    # TODO: print too soon error
     resp.raise_for_status()
     batch_id = resp.json()["id"]
     env.logger.info("Created sync batch %s, waiting for updates ...", batch_id)
@@ -47,7 +73,25 @@ def sync(env: Environment):
         resp = requests.get(url, headers={"access-token": token})
         # TODO: provide friendly error messages here
         resp.raise_for_status()
-        print("@" * 10, resp.json())
+        payload = resp.json()
+        total = len(payload["syncs"])
+        good_terms = list(
+            PlaidItemSyncState[sync["state"]] in GOOD_TERMINAL_SYNC_STATES
+            for sync in payload["syncs"]
+        )
+        bad_terms = list(
+            PlaidItemSyncState[sync["state"]] in BAD_TERMINAL_SYNC_STATES
+            for sync in payload["syncs"]
+        )
+        progress = len(good_terms) + len(bad_terms)
+        if progress > total:
+            # TODO: print better report
+            env.logger.info("Good: %s", good_terms)
+            env.logger.info("Bad: %s", bad_terms)
+
+            env.logger.info("done")
+            break
+        env.logger.info("Still processing, %s out of %s", progress, total)
 
 
 @cli.command(help="")
