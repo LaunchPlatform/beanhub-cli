@@ -12,7 +12,6 @@ from rich.markup import escape
 from rich.padding import Padding
 from rich.table import Table
 
-from ..config import Config
 from ..config import load_config
 from ..environment import Environment
 from ..environment import pass_env
@@ -52,6 +51,7 @@ class ConnectConfig:
     repo: str
 
 
+# TODO: maybe extract this part to a shared env for connect command?
 def ensure_config(env: Environment, repo: str | None) -> ConnectConfig:
     config = load_config()
     if config is None or config.access_token is None:
@@ -66,21 +66,16 @@ def ensure_config(env: Environment, repo: str | None) -> ConnectConfig:
         sys.exit(-1)
     return ConnectConfig(
         token=config.access_token.token,
-        repo=repo if repo is None else config.repo.default,
+        repo=repo if repo is not None else config.repo.default,
     )
 
 
-@cli.command(help="Sync transactions for all BeanHub Connect banks")
-@click.option(
-    "-r",
-    "--repo",
-    type=str,
-    help='Which repository to run sync on, in "<username>/<repo_name>" format',
-)
-@pass_env
-def sync(env: Environment, repo: str | None):
-    config = ensure_config(env, repo=repo)
-
+def run_sync(env: Environment, config: ConnectConfig):
+    env.logger.info(
+        "Running sync batch for repo [green]%s[/]",
+        config.repo,
+        extra={"markup": True, "highlighter": None},
+    )
     # TODO: generate API client from OpenAPI spec instead
     url = urllib.parse.urljoin(
         env.api_base_url, f"v1/repos/{config.repo}/connect/sync_batches"
@@ -120,49 +115,71 @@ def sync(env: Environment, repo: str | None):
         )
         progress = len(good_terms) + len(bad_terms)
         if progress >= total:
-            table = Table(
-                title="Sync finished successfully",
-                box=box.SIMPLE,
-                header_style=TABLE_HEADER_STYLE,
-                expand=True,
-            )
-            table.add_column("Id", style=TABLE_COLUMN_STYLE)
-            table.add_column("Institution", style=TABLE_COLUMN_STYLE)
-            table.add_column("State", style=TABLE_COLUMN_STYLE)
-            for sync in good_terms:
-                table.add_row(
-                    escape(sync["id"]),
-                    escape(sync["item"]["institution_name"]),
-                    escape(sync["state"]),
-                )
-            rich.print(Padding(table, (1, 0, 0, 4)))
-
-            table = Table(
-                title="Sync finished with error",
-                box=box.SIMPLE,
-                header_style=TABLE_HEADER_STYLE,
-                expand=True,
-            )
-            table.add_column("Id", style=TABLE_COLUMN_STYLE)
-            table.add_column("Institution", style=TABLE_COLUMN_STYLE)
-            table.add_column("State", style=TABLE_COLUMN_STYLE)
-            table.add_column("Error", style=TABLE_COLUMN_STYLE)
-            for sync in bad_terms:
-                table.add_row(
-                    escape(sync["id"]),
-                    escape(sync["item"]["institution_name"]),
-                    escape(sync["state"]),
-                    escape(sync["error_message"]),
-                )
-            rich.print(Padding(table, (1, 0, 0, 4)))
             break
-        env.logger.info(
-            "Still processing, [green]%s[/] out of [green]%s[/]", progress, total
+        else:
+            env.logger.info(
+                "Still processing, [green]%s[/] out of [green]%s[/]", progress, total
+            )
+    table = Table(
+        title="Sync finished successfully",
+        box=box.SIMPLE,
+        header_style=TABLE_HEADER_STYLE,
+        expand=True,
+    )
+    table.add_column("Id", style=TABLE_COLUMN_STYLE)
+    table.add_column("Institution", style=TABLE_COLUMN_STYLE)
+    table.add_column("State", style=TABLE_COLUMN_STYLE)
+    for sync in good_terms:
+        table.add_row(
+            escape(sync["id"]),
+            escape(sync["item"]["institution_name"]),
+            escape(sync["state"]),
         )
+    rich.print(Padding(table, (1, 0, 0, 4)))
+
+    table = Table(
+        title="Sync finished with error",
+        box=box.SIMPLE,
+        header_style=TABLE_HEADER_STYLE,
+        expand=True,
+    )
+    table.add_column("Id", style=TABLE_COLUMN_STYLE)
+    table.add_column("Institution", style=TABLE_COLUMN_STYLE)
+    table.add_column("State", style=TABLE_COLUMN_STYLE)
+    table.add_column("Error", style=TABLE_COLUMN_STYLE)
+    for sync in bad_terms:
+        table.add_row(
+            escape(sync["id"]),
+            escape(sync["item"]["institution_name"]),
+            escape(sync["state"]),
+            escape(sync["error_message"]),
+        )
+    rich.print(Padding(table, (1, 0, 0, 4)))
+
+
+@cli.command(help="Sync transactions for all BeanHub Connect banks")
+@click.option(
+    "-r",
+    "--repo",
+    type=str,
+    help='Which repository to run sync on, in "<username>/<repo_name>" format',
+)
+@pass_env
+def sync(env: Environment, repo: str | None):
+    config = ensure_config(env, repo=repo)
+    run_sync(env, config)
     env.logger.info("done")
 
 
-@cli.command(help="")
+@cli.command(
+    help="Dump transaction CSV files from BeanHub Connect to your local environment"
+)
+@click.option(
+    "-r",
+    "--repo",
+    type=str,
+    help='Which repository to run sync on, in "<username>/<repo_name>" format',
+)
 @click.option(
     "-s",
     "--sync",
@@ -171,5 +188,8 @@ def sync(env: Environment, repo: str | None):
     help="Run sync first before running dump",
 )
 @pass_env
-def dump(env: Environment, repo: str, sync: bool):
-    token = ensure_token(env)
+def dump(env: Environment, repo: str | None, sync: bool):
+    config = ensure_config(env, repo=repo)
+    if sync:
+        run_sync(env, config)
+    env.logger.info("done")
