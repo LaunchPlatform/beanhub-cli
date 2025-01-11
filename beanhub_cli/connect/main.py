@@ -76,12 +76,14 @@ def sync(env: Environment):
         payload = resp.json()
         total = len(payload["syncs"])
         good_terms = list(
-            PlaidItemSyncState[sync["state"]] in GOOD_TERMINAL_SYNC_STATES
+            sync
             for sync in payload["syncs"]
+            if PlaidItemSyncState[sync["state"]] in GOOD_TERMINAL_SYNC_STATES
         )
         bad_terms = list(
-            PlaidItemSyncState[sync["state"]] in BAD_TERMINAL_SYNC_STATES
+            sync
             for sync in payload["syncs"]
+            if PlaidItemSyncState[sync["state"]] in BAD_TERMINAL_SYNC_STATES
         )
         progress = len(good_terms) + len(bad_terms)
         if progress > total:
