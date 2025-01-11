@@ -86,7 +86,7 @@ def sync(env: Environment):
             if PlaidItemSyncState[sync["state"]] in BAD_TERMINAL_SYNC_STATES
         )
         progress = len(good_terms) + len(bad_terms)
-        if progress > total:
+        if progress >= total:
             # TODO: print better report
             env.logger.info("Good: %s", good_terms)
             env.logger.info("Bad: %s", bad_terms)
