@@ -123,6 +123,12 @@ def run_sync(env: Environment, config: ConnectConfig):
     if resp.status_code == 422:
         env.logger.error("Failed to sync with error: %s", resp.json())
         sys.exit(-1)
+    elif resp.status_code == 401:
+        env.logger.error(
+            "Failed to sync permission error: %s, please ensure your Access Token has API_CONNECT_SYNC permission",
+            resp.json(),
+        )
+        sys.exit(-1)
     resp.raise_for_status()
 
     batch_id = resp.json()["id"]
