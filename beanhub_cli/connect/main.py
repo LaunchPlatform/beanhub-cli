@@ -3,6 +3,7 @@ import enum
 import io
 import json
 import sys
+import tarfile
 import tempfile
 import time
 import urllib.parse
@@ -104,6 +105,8 @@ def decrypt_file(
         output_file.write(unpadded_chunk)
     output_file.write(padder.update(decryptor.finalize()))
     output_file.write(padder.finalize())
+    output_file.flush()
+    output_file.seek(0)
 
 
 def run_sync(env: Environment, config: ConnectConfig):
@@ -282,7 +285,7 @@ def dump(env: Environment, repo: str | None, sync: bool):
 
     with (
         tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as encrypted_file,
-        tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as tar_file,
+        tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as decrypted_file,
     ):
         with (requests.get(download_url, stream=True) as req,):
             for chunk in req.iter_content(4096):
@@ -290,6 +293,10 @@ def dump(env: Environment, repo: str | None, sync: bool):
         encrypted_file.flush()
         encrypted_file.seek(0)
         env.logger.info("Decrypting downloaded file ...")
-        decrypt_file(input_file=encrypted_file, output_file=tar_file, key=key, iv=iv)
+        decrypt_file(
+            input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
+        )
+        with tarfile.open(fileobj=decrypted_file, mode="r:gz") as tar_file:
+            tar_file.extractall(filter="data")
 
     env.logger.info("done")
