@@ -10,6 +10,7 @@ from .config import AccessToken
 from .config import Config
 from .config import get_config_path
 from .config import load_config
+from .config import Repository
 from .config import save_config
 from .environment import Environment
 from .environment import pass_env
@@ -57,7 +58,15 @@ def main(env: Environment):
         time.sleep(5)
         resp = requests.get(poll_url)
         if resp.status_code == 200:
-            save_config(Config(access_token=AccessToken(token=resp.json()["token"])))
+            payload = resp.json()
+            # TODO: ideally this should be a different API call, make it simple for now
+            repositories = payload["repositories"]
+            save_config(
+                Config(
+                    access_token=AccessToken(token=payload["token"]),
+                    repo=Repository(default=repositories[0]) if repositories else None,
+                )
+            )
             env.logger.info("Session access granted, saved config to %s", config_path)
             break
         elif resp.status_code == 202:
