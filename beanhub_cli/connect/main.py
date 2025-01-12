@@ -34,6 +34,14 @@ class PlaidItemSyncState(enum.Enum):
     IMPORT_FAILED = "IMPORT_FAILED"
 
 
+@enum.unique
+class DumpRequestState(enum.Enum):
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    COMPLETE = "COMPLETE"
+    FAILED = "FAILED"
+
+
 GOOD_TERMINAL_SYNC_STATES = frozenset(
     [
         PlaidItemSyncState.IMPORT_COMPLETE,
@@ -220,5 +228,25 @@ def dump(env: Environment, repo: str | None, sync: bool):
         extra={"markup": True, "highlighter": None},
     )
 
-    # TODO:
+    url = urllib.parse.urljoin(
+        env.api_base_url, f"v1/repos/{config.repo}/connect/dumps/{dump_id}"
+    )
+    while True:
+        time.sleep(5)
+        resp = requests.get(url, headers={"access-token": config.token})
+        # TODO: provide friendly error messages here
+        resp.raise_for_status()
+        payload = resp.json()
+        state = DumpRequestState[payload["state"]]
+        if state == DumpRequestState.FAILED:
+            env.logger.error("Failed to dump with error: %s", payload["error_message"])
+            sys.exit(-1)
+        elif state == DumpRequestState.COMPLETE:
+            break
+        else:
+            env.logger.debug("State is %s, keep polling...", state)
+
+    # TODO: download and decrypt
+    print("@" * 20, payload["download_url"])
+
     env.logger.info("done")
