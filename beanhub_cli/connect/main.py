@@ -265,6 +265,12 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
     if resp.status_code == 422:
         env.logger.error("Failed to dump with error: %s", resp.json())
         sys.exit(-1)
+    elif resp.status_code == 401:
+        env.logger.error(
+            "Failed to dump permission error: %s, please ensure your Access Token has API_CONNECT_DUMP permission",
+            resp.json(),
+        )
+        sys.exit(-1)
     resp.raise_for_status()
 
     dump_id = resp.json()["id"]
