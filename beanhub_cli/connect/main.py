@@ -226,8 +226,20 @@ def sync(env: Environment, repo: str | None):
     is_flag=True,
     help="Run sync first before running dump",
 )
+@click.option(
+    "--unsafe-tar-extract",
+    type=bool,
+    is_flag=True,
+    help="Allow unsafe tar extraction, mostly for Python < 3.11",
+)
 @pass_env
-def dump(env: Environment, repo: str | None, sync: bool):
+def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: bool):
+    if not hasattr(tarfile, "data_filter") and not unsafe_tar_extract:
+        env.logger.error(
+            "You need to use Python >= 3.11 in order to safely unpack the downloaded tar file, or you need to pass "
+            "in --unsafe-tar-extract argument to allow unsafe tar file extracting"
+        )
+        sys.exit(-1)
     config = ensure_config(env, repo=repo)
     if sync:
         run_sync(env, config)
@@ -297,6 +309,10 @@ def dump(env: Environment, repo: str | None, sync: bool):
             input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
         )
         with tarfile.open(fileobj=decrypted_file, mode="r:gz") as tar_file:
-            tar_file.extractall(filter="data")
+            if hasattr(tarfile, "data_filter"):
+                tar_file.extractall(filter="data")
+            else:
+                env.logger.warning("Performing unsafe tar file extracting")
+                tar_file.extractall()
 
     env.logger.info("done")
