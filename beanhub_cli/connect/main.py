@@ -1,5 +1,6 @@
 import dataclasses
 import enum
+import io
 import json
 import sys
 import tempfile
@@ -86,6 +87,23 @@ def ensure_config(env: Environment, repo: str | None) -> ConnectConfig:
         token=config.access_token.token,
         repo=repo if repo is not None else config.repo.default,
     )
+
+
+def decrypt_file(
+    input_file: io.BytesIO, output_file: io.BytesIO, iv: bytes, key: bytes
+):
+    cipher = Cipher(algorithms.AES256(key), modes.CBC(iv))
+    decryptor = cipher.decryptor()
+    padder = padding.PKCS7(128).unpadder()
+    while True:
+        chunk = input_file.read(4096)
+        if not chunk:
+            break
+        decrypted = decryptor.update(chunk)
+        unpadded_chunk = padder.update(decrypted)
+        output_file.write(unpadded_chunk)
+    output_file.write(padder.update(decryptor.finalize()))
+    output_file.write(padder.finalize())
 
 
 def run_sync(env: Environment, config: ConnectConfig):
@@ -262,10 +280,6 @@ def dump(env: Environment, repo: str | None, sync: bool):
     key = URLSafeBase64Encoder.decode(encryption_key["key"])
     iv = URLSafeBase64Encoder.decode(encryption_key["iv"])
 
-    cipher = Cipher(algorithms.AES256(key), modes.CBC(iv))
-    decryptor = cipher.decryptor()
-    padder = padding.PKCS7(128).unpadder()
-
     with (
         tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as encrypted_file,
         tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as tar_file,
@@ -276,14 +290,6 @@ def dump(env: Environment, repo: str | None, sync: bool):
         encrypted_file.flush()
         encrypted_file.seek(0)
         env.logger.info("Decrypting downloaded file ...")
-        while True:
-            chunk = encrypted_file.read(4096)
-            if not chunk:
-                break
-            decrypted = decryptor.update(chunk)
-            unpadded_chunk = padder.update(decrypted)
-            tar_file.write(unpadded_chunk)
-        tar_file.write(padder.update(decryptor.finalize()))
-        tar_file.write(padder.finalize())
+        decrypt_file(input_file=encrypted_file, output_file=tar_file, key=key, iv=iv)
 
     env.logger.info("done")
