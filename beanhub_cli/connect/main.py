@@ -1,14 +1,21 @@
 import dataclasses
 import enum
+import json
 import sys
+import tempfile
 import time
 import urllib.parse
 
 import click
 import requests
 import rich
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.ciphers import algorithms
+from cryptography.hazmat.primitives.ciphers import Cipher
+from cryptography.hazmat.primitives.ciphers import modes
 from nacl.encoding import URLSafeBase64Encoder
 from nacl.public import PrivateKey
+from nacl.public import SealedBox
 from rich import box
 from rich.markup import escape
 from rich.padding import Padding
@@ -21,6 +28,7 @@ from .cli import cli
 
 TABLE_HEADER_STYLE = "yellow"
 TABLE_COLUMN_STYLE = "cyan"
+SPOOLED_FILE_MAX_SIZE = 1024 * 1024 * 5
 
 
 @enum.unique
@@ -246,7 +254,36 @@ def dump(env: Environment, repo: str | None, sync: bool):
         else:
             env.logger.debug("State is %s, keep polling...", state)
 
-    # TODO: download and decrypt
-    print("@" * 20, payload["download_url"])
+    download_url = payload["download_url"]
+    sealed_box = SealedBox(private_key)
+    encryption_key = json.loads(
+        sealed_box.decrypt(URLSafeBase64Encoder.decode(payload["encryption_key"]))
+    )
+    key = URLSafeBase64Encoder.decode(encryption_key["key"])
+    iv = URLSafeBase64Encoder.decode(encryption_key["iv"])
+
+    cipher = Cipher(algorithms.AES256(key), modes.CBC(iv))
+    decryptor = cipher.decryptor()
+    padder = padding.PKCS7(128).unpadder()
+
+    with (
+        tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as encrypted_file,
+        tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as tar_file,
+    ):
+        with (requests.get(download_url, stream=True) as req,):
+            for chunk in req.iter_content(4096):
+                encrypted_file.write(chunk)
+        encrypted_file.flush()
+        encrypted_file.seek(0)
+        env.logger.info("Decrypting downloaded file ...")
+        while True:
+            chunk = encrypted_file.read(4096)
+            if not chunk:
+                break
+            decrypted = decryptor.update(chunk)
+            unpadded_chunk = padder.update(decrypted)
+            tar_file.write(unpadded_chunk)
+        tar_file.write(padder.update(decryptor.finalize()))
+        tar_file.write(padder.finalize())
 
     env.logger.info("done")
