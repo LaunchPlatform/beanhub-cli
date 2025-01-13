@@ -15,7 +15,7 @@ def check_imports(
         return
     extras = ",".join(required_extras)
     logger.error(
-        "Cannot import module %s, please ensure that you install beanhub-cli with optional deps [%s]."
+        "Cannot import module %s, please ensure that you install beanhub-cli with optional deps [%s]. "
         'Like `pip install "beanhub-cli[%s]"`',
         missing_modules,
         extras,
