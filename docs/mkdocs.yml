@@ -29,6 +29,7 @@ nav:
   - 'BeanHub CLI': 'index.md'
   - 'Getting started': 'getting-started.md'
   - 'Commands':
+    - 'Login': 'commands/login.md'
     - 'Import': 'commands/import.md'
     - 'Forms': 'commands/form.md'
     - 'Format': 'commands/format.md'
