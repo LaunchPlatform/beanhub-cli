@@ -1,7 +1,5 @@
 import pathlib
-import tomllib
 
-import tomli_w
 from pydantic import BaseModel
 
 
@@ -23,17 +21,21 @@ def get_config_path() -> pathlib.Path:
 
 
 def load_config(file_path: pathlib.Path | None = None) -> Config | None:
+    import tomli
+
     if file_path is None:
         file_path = get_config_path()
     if not file_path.exists():
         return
 
     with file_path.open("rb") as fo:
-        obj = tomllib.load(fo)
+        obj = tomli.load(fo)
         return Config.model_validate(obj)
 
 
 def save_config(config: Config, file_path: pathlib.Path | None = None):
+    import tomli_w
+
     if file_path is None:
         file_path = get_config_path()
     file_path.parent.mkdir(parents=True, exist_ok=True)

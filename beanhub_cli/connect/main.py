@@ -18,6 +18,7 @@ from rich.table import Table
 from ..config import load_config
 from ..environment import Environment
 from ..environment import pass_env
+from ..utils import check_imports
 from .cli import cli
 
 TABLE_HEADER_STYLE = "yellow"
@@ -124,7 +125,6 @@ def decrypt_file(
 
 
 def run_sync(env: Environment, config: ConnectConfig):
-    check_imports(env, required=["requests"])
     import requests
 
     env.logger.info(
@@ -228,6 +228,11 @@ def run_sync(env: Environment, config: ConnectConfig):
 )
 @pass_env
 def sync(env: Environment, repo: str | None):
+    check_imports(
+        logger=env.logger,
+        module_names=["requests", "tomli", "tomli_w"],
+        required_extras=["login"],
+    )
     config = ensure_config(env, repo=repo)
     run_sync(env, config)
     env.logger.info("done")
@@ -257,7 +262,12 @@ def sync(env: Environment, repo: str | None):
 )
 @pass_env
 def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: bool):
-    check_imports(env, required=["requests", "nacl", "cryptography"])
+    check_imports(
+        logger=env.logger,
+        module_names=["requests", "tomli", "tomli_w", "nacl", "cryptography"],
+        required_extras=["connect"],
+    )
+
     import requests
     from nacl.encoding import URLSafeBase64Encoder
     from nacl.public import PrivateKey

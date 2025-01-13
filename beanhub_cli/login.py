@@ -1,5 +1,4 @@
 import platform
-import sys
 import time
 import urllib.parse
 import webbrowser
@@ -13,20 +12,19 @@ from .config import Repository
 from .config import save_config
 from .environment import Environment
 from .environment import pass_env
+from .utils import check_imports
 
 
 @cli.command(name="login", help="Login your BeanHub account")
 @pass_env
 def main(env: Environment):
-    try:
-        import requests
-    except ImportError:
-        env.logger.error(
-            "Cannot import requests for the login feature. "
-            'Please install beanhub-cli with optional deps [login] like `pip install "beanhub-cli[login]"'
-        )
+    check_imports(
+        logger=env.logger,
+        module_names=["requests", "tomli", "tomli_w"],
+        required_extras=["login"],
+    )
 
-        sys.exit(-1)
+    import requests
 
     config_path = get_config_path()
     config = load_config()
