@@ -1,9 +1,8 @@
 import platform
+import sys
 import time
 import urllib.parse
 import webbrowser
-
-import requests
 
 from .cli import cli
 from .config import AccessToken
@@ -19,6 +18,16 @@ from .environment import pass_env
 @cli.command(name="login", help="Login your BeanHub account")
 @pass_env
 def main(env: Environment):
+    try:
+        import requests
+    except ImportError:
+        env.logger.error(
+            "Cannot import requests for the login feature. "
+            'Please install beanhub-cli with optional deps [login] like `pip install "beanhub-cli[login]"'
+        )
+
+        sys.exit(-1)
+
     config_path = get_config_path()
     config = load_config()
     if config is not None and config.access_token is not None:
