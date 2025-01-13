@@ -13,6 +13,7 @@ jobs:
       - checkout
       - python/install-packages:
           pkg-manager: poetry
+          args: --all-extras
       - run:
           name: Run test
           command: poetry run python -m pytest ./tests -svvvv
@@ -23,6 +24,7 @@ jobs:
       - checkout
       - python/install-packages:
           pkg-manager: poetry
+          args: --all-extras
       - run:
           name: config
           command: |
