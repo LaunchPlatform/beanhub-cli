@@ -9,15 +9,7 @@ import time
 import urllib.parse
 
 import click
-import requests
 import rich
-from cryptography.hazmat.primitives import padding
-from cryptography.hazmat.primitives.ciphers import algorithms
-from cryptography.hazmat.primitives.ciphers import Cipher
-from cryptography.hazmat.primitives.ciphers import modes
-from nacl.encoding import URLSafeBase64Encoder
-from nacl.public import PrivateKey
-from nacl.public import SealedBox
 from rich import box
 from rich.markup import escape
 from rich.padding import Padding
@@ -71,6 +63,23 @@ class ConnectConfig:
     repo: str
 
 
+def check_imports(env: Environment, required: list[str]):
+    missing_modules = []
+    for name in required:
+        try:
+            __import__(name)
+        except ImportError:
+            missing_modules.append(name)
+    if not missing_modules:
+        return
+    env.logger.error(
+        "Cannot import module %s, please ensure that you install beanhub-cli with optional deps [connect]."
+        'Like `pip install "beanhub-cli[connect]"`',
+        ", ".join(missing_modules),
+    )
+    sys.exit(-1)
+
+
 # TODO: maybe extract this part to a shared env for connect command?
 def ensure_config(env: Environment, repo: str | None) -> ConnectConfig:
     config = load_config()
@@ -93,6 +102,11 @@ def ensure_config(env: Environment, repo: str | None) -> ConnectConfig:
 def decrypt_file(
     input_file: io.BytesIO, output_file: io.BytesIO, iv: bytes, key: bytes
 ):
+    from cryptography.hazmat.primitives import padding
+    from cryptography.hazmat.primitives.ciphers import algorithms
+    from cryptography.hazmat.primitives.ciphers import Cipher
+    from cryptography.hazmat.primitives.ciphers import modes
+
     cipher = Cipher(algorithms.AES256(key), modes.CBC(iv))
     decryptor = cipher.decryptor()
     padder = padding.PKCS7(128).unpadder()
@@ -110,6 +124,9 @@ def decrypt_file(
 
 
 def run_sync(env: Environment, config: ConnectConfig):
+    check_imports(env, required=["requests"])
+    import requests
+
     env.logger.info(
         "Running sync batch for repo [green]%s[/]",
         config.repo,
@@ -240,6 +257,12 @@ def sync(env: Environment, repo: str | None):
 )
 @pass_env
 def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: bool):
+    check_imports(env, required=["requests", "nacl", "cryptography"])
+    import requests
+    from nacl.encoding import URLSafeBase64Encoder
+    from nacl.public import PrivateKey
+    from nacl.public import SealedBox
+
     if not hasattr(tarfile, "data_filter") and not unsafe_tar_extract:
         env.logger.error(
             "You need to use Python >= 3.11 in order to safely unpack the downloaded tar file, or you need to pass "
