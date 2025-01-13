@@ -1,6 +1,4 @@
-import dataclasses
 import enum
-import io
 import json
 import sys
 import tarfile
@@ -15,11 +13,13 @@ from rich.markup import escape
 from rich.padding import Padding
 from rich.table import Table
 
-from ..config import load_config
 from ..environment import Environment
 from ..environment import pass_env
 from ..utils import check_imports
 from .cli import cli
+from .config import ConnectConfig
+from .config import ensure_config
+from .encryption import decrypt_file
 
 TABLE_HEADER_STYLE = "yellow"
 TABLE_COLUMN_STYLE = "cyan"
@@ -56,72 +56,6 @@ BAD_TERMINAL_SYNC_STATES = frozenset(
         PlaidItemSyncState.IMPORT_FAILED,
     ]
 )
-
-
-@dataclasses.dataclass
-class ConnectConfig:
-    token: str
-    repo: str
-
-
-def check_imports(env: Environment, required: list[str]):
-    missing_modules = []
-    for name in required:
-        try:
-            __import__(name)
-        except ImportError:
-            missing_modules.append(name)
-    if not missing_modules:
-        return
-    env.logger.error(
-        "Cannot import module %s, please ensure that you install beanhub-cli with optional deps [connect]."
-        'Like `pip install "beanhub-cli[connect]"`',
-        ", ".join(missing_modules),
-    )
-    sys.exit(-1)
-
-
-# TODO: maybe extract this part to a shared env for connect command?
-def ensure_config(env: Environment, repo: str | None) -> ConnectConfig:
-    config = load_config()
-    if config is None or config.access_token is None:
-        env.logger.error(
-            'You need to login into your BeanHub account with "bh login" command first'
-        )
-        sys.exit(-1)
-    if repo is None and (config.repo is None or config.repo.default is None):
-        env.logger.error(
-            'You need to provide a repo by -r argument, such as "myuser/myrepo" or define a default repo in your config file'
-        )
-        sys.exit(-1)
-    return ConnectConfig(
-        token=config.access_token.token,
-        repo=repo if repo is not None else config.repo.default,
-    )
-
-
-def decrypt_file(
-    input_file: io.BytesIO, output_file: io.BytesIO, iv: bytes, key: bytes
-):
-    from cryptography.hazmat.primitives import padding
-    from cryptography.hazmat.primitives.ciphers import algorithms
-    from cryptography.hazmat.primitives.ciphers import Cipher
-    from cryptography.hazmat.primitives.ciphers import modes
-
-    cipher = Cipher(algorithms.AES256(key), modes.CBC(iv))
-    decryptor = cipher.decryptor()
-    padder = padding.PKCS7(128).unpadder()
-    while True:
-        chunk = input_file.read(4096)
-        if not chunk:
-            break
-        decrypted = decryptor.update(chunk)
-        unpadded_chunk = padder.update(decrypted)
-        output_file.write(unpadded_chunk)
-    output_file.write(padder.update(decryptor.finalize()))
-    output_file.write(padder.finalize())
-    output_file.flush()
-    output_file.seek(0)
 
 
 def run_sync(env: Environment, config: ConnectConfig):
