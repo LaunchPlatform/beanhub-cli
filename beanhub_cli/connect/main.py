@@ -54,6 +54,7 @@ GOOD_TERMINAL_SYNC_STATES = frozenset(
 BAD_TERMINAL_SYNC_STATES = frozenset(
     [
         PlaidItemSyncState.IMPORT_FAILED,
+        PlaidItemSyncState.SYNC_FAILED,
     ]
 )
 
@@ -114,7 +115,10 @@ def run_sync(env: Environment, config: ConnectConfig):
             break
         else:
             env.logger.info(
-                "Still processing, [green]%s[/] out of [green]%s[/]", progress, total
+                "Still processing, [green]%s[/] out of [green]%s[/]",
+                progress,
+                total,
+                extra={"markup": True, "highlighter": None},
             )
     table = Table(
         title="Sync finished successfully",
