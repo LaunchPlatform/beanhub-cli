@@ -30,6 +30,7 @@ nav:
   - 'Getting started': 'getting-started.md'
   - 'Commands':
     - 'Login': 'commands/login.md'
+    - 'Connect': 'commands/connect.md'
     - 'Import': 'commands/import.md'
     - 'Forms': 'commands/form.md'
     - 'Format': 'commands/format.md'
