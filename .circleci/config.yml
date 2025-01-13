@@ -23,6 +23,7 @@ jobs:
       - checkout
       - python/install-packages:
           pkg-manager: poetry
+          args: --all-extras
       - run:
           name: config
           command: |
