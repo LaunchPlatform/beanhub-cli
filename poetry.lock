@@ -1630,10 +1630,10 @@ markupsafe = "*"
 email = ["email-validator"]
 
 [extras]
-connect = ["cryptography", "pynacl", "requests", "tomli-w"]
-login = ["requests", "tomli-w"]
+connect = ["cryptography", "pynacl", "requests", "tomli", "tomli-w"]
+login = ["requests", "tomli", "tomli-w"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "60629adefc92879cc6780aa228cddb8b7f87de4e0e40244bf9884110c5604629"
+content-hash = "dc5358ceab75f89e26582548e12294361b07fdafdd5ab410cb87d7e49be33069"
