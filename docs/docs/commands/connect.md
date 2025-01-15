@@ -9,12 +9,12 @@ This feature allows our members to connect to 12,000+ financial institutions in 
 Originally, this feature imports data as Git commits only to BeanHub's repository.
 Later on, we added the standalone commands to make it possible to pull bank transactions directly into your local work environment without relying on updates in BeanHub's Git repository.
 
+Please note that connect commands require some extra optional Python dependencies.
+Therefore, when installing BeanHub-CLI Python package, please make sure to include `connect` extra dependencies like this:
+
 ```bash
 pip install "beanhub-cli[connect]"
 ```
-
-Please note that connect commands require some extra optional Python dependencies.
-Therefore, when installing BeanHub-CLI Python package, please make sure to include `connect` extra dependencies like this:
 
 ## Pre-requirements
 
