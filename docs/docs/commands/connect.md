@@ -8,6 +8,7 @@
 This feature allows our members to [connect to 12,000+ financial institutions in 17 countries and produce CSV files](https://beanhub.io/blog/2024/06/24/introduction-of-beanhub-connect/), which [beanhub-import](https://github.com/LaunchPlatform/beanhub-import) can ingest and generate corresponding Beancount transactions for you automatically.
 Originally, this feature imports data as Git commits only to BeanHub's repository.
 Later on, we added the standalone commands to make it possible to pull bank transactions directly into your local work environment without relying on updates in BeanHub's Git repository.
+You can read our blog post [Direct Connect: Pulling transactions as CSV files from banks via Plaid directly](https://beanhub.io/blog/2025/01/16/direct-connect-repository/) to learn more.
 
 Please note that connect commands require some extra optional Python dependencies.
 Therefore, when installing BeanHub-CLI Python package, please make sure to include `connect` extra dependencies like this:
