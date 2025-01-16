@@ -5,7 +5,7 @@
     Please read the [document about the login command first here](./login.md).
 
 [BeanHub Connect](https://beanhub.io/blog/2024/06/24/introduction-of-beanhub-connect/) is a feature for paid BeanHub members only.
-This feature allows our members to connect to 12,000+ financial institutions in 17 countries and produce CSV files, which [beanhub-import](https://github.com/LaunchPlatform/beanhub-import) can ingest and generate corresponding Beancount transactions for you automatically.
+This feature allows our members to [connect to 12,000+ financial institutions in 17 countries and produce CSV files](https://beanhub.io/blog/2024/06/24/introduction-of-beanhub-connect/), which [beanhub-import](https://github.com/LaunchPlatform/beanhub-import) can ingest and generate corresponding Beancount transactions for you automatically.
 Originally, this feature imports data as Git commits only to BeanHub's repository.
 Later on, we added the standalone commands to make it possible to pull bank transactions directly into your local work environment without relying on updates in BeanHub's Git repository.
 
