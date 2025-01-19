@@ -7,6 +7,7 @@ import time
 import urllib.parse
 
 import click
+import httpx
 import rich
 from rich import box
 from rich.markup import escape
@@ -16,10 +17,15 @@ from rich.table import Table
 from ..environment import Environment
 from ..environment import pass_env
 from ..internal_api import AuthenticatedClient
+from ..internal_api.api.connect import create_dump_request
 from ..internal_api.api.connect import create_sync_batch
+from ..internal_api.api.connect import get_dump_request
 from ..internal_api.api.connect import get_sync_batch
+from ..internal_api.models import CreateDumpRequestRequest
+from ..internal_api.models import CreateDumpRequestResponse
 from ..internal_api.models import CreateSyncBatchResponse
 from ..internal_api.models import DumpRequestState
+from ..internal_api.models import GetDumpRequestResponse
 from ..internal_api.models import GetSyncBatchResponse
 from ..internal_api.models import PlaidItemSyncState
 from ..utils import check_imports
@@ -179,7 +185,6 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
         required_extras=["connect"],
     )
 
-    import requests
     from nacl.encoding import URLSafeBase64Encoder
     from nacl.public import PrivateKey
     from nacl.public import SealedBox
@@ -197,56 +202,42 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
     private_key = PrivateKey.generate()
     public_key = private_key.public_key.encode(URLSafeBase64Encoder).decode("ascii")
 
-    # TODO: generate API client from OpenAPI spec instead
-    url = urllib.parse.urljoin(
-        env.api_base_url, f"v1/repos/{config.repo}/connect/dumps"
-    )
-    resp = requests.post(
-        url,
-        json=dict(public_key=public_key),
-        headers={"access-token": config.token},
-    )
-    if resp.status_code == 422:
-        env.logger.error("Failed to dump with error: %s", resp.json())
-        sys.exit(-1)
-    elif resp.status_code == 401:
-        env.logger.error(
-            "Failed to dump permission error: %s, please ensure your Access Token has API_CONNECT_DUMP permission",
-            resp.json(),
+    with AuthenticatedClient(base_url=env.api_base_url, token=config.token) as client:
+        client.raise_on_unexpected_status = True
+        resp: CreateDumpRequestResponse = create_dump_request.sync(
+            body=CreateDumpRequestRequest(public_key=public_key),
+            username=config.username,
+            repo_name=config.repo,
+            client=client,
         )
-        sys.exit(-1)
-    resp.raise_for_status()
+        dump_id = resp.id
+        env.logger.info(
+            "Created dump [green]%s[/] with public_key [green]%s[/], waiting for updates ...",
+            dump_id,
+            public_key,
+            extra={"markup": True, "highlighter": None},
+        )
 
-    dump_id = resp.json()["id"]
-    env.logger.info(
-        "Created dump [green]%s[/] with public_key [green]%s[/], waiting for updates ...",
-        dump_id,
-        public_key,
-        extra={"markup": True, "highlighter": None},
-    )
+        while True:
+            time.sleep(5)
+            resp: GetDumpRequestResponse = get_dump_request.sync(
+                dump_request_id=dump_id,
+                username=config.username,
+                repo_name=config.repo,
+                client=client,
+            )
+            if resp.state == DumpRequestState.FAILED:
+                env.logger.error("Failed to dump with error: %s", resp.error_message)
+                sys.exit(-1)
+            elif resp.state == DumpRequestState.COMPLETE:
+                break
+            else:
+                env.logger.debug("State is %s, keep polling...", resp.state)
 
-    url = urllib.parse.urljoin(
-        env.api_base_url, f"v1/repos/{config.repo}/connect/dumps/{dump_id}"
-    )
-    while True:
-        time.sleep(5)
-        resp = requests.get(url, headers={"access-token": config.token})
-        # TODO: provide friendly error messages here
-        resp.raise_for_status()
-        payload = resp.json()
-        state = DumpRequestState[payload["state"]]
-        if state == DumpRequestState.FAILED:
-            env.logger.error("Failed to dump with error: %s", payload["error_message"])
-            sys.exit(-1)
-        elif state == DumpRequestState.COMPLETE:
-            break
-        else:
-            env.logger.debug("State is %s, keep polling...", state)
-
-    download_url = payload["download_url"]
+    download_url = resp.download_url
     sealed_box = SealedBox(private_key)
     encryption_key = json.loads(
-        sealed_box.decrypt(URLSafeBase64Encoder.decode(payload["encryption_key"]))
+        sealed_box.decrypt(URLSafeBase64Encoder.decode(resp.encryption_key))
     )
     key = URLSafeBase64Encoder.decode(encryption_key["key"])
     iv = URLSafeBase64Encoder.decode(encryption_key["iv"])
@@ -255,8 +246,8 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
         tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as encrypted_file,
         tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as decrypted_file,
     ):
-        with (requests.get(download_url, stream=True) as req,):
-            for chunk in req.iter_content(4096):
+        with httpx.stream("GET", download_url) as req:
+            for chunk in req.iter_bytes():
                 encrypted_file.write(chunk)
         encrypted_file.flush()
         encrypted_file.seek(0)
