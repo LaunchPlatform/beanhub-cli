@@ -55,7 +55,7 @@ BAD_TERMINAL_SYNC_STATES = frozenset(
 
 
 def run_sync(env: Environment, config: ConnectConfig):
-    env.logger.info(
+    logger.info(
         "Running sync batch for repo [green]%s[/]",
         config.repo,
         extra={"markup": True, "highlighter": None},
@@ -152,7 +152,7 @@ def sync(env: Environment, repo: str | None):
         module_names=["httpx", "attrs", "dateutil", "tomli", "tomli_w"],
         required_extras=["login"],
     )
-    config = ensure_config(repo=repo, logger=env.logger)
+    config = ensure_config(env=env, repo=repo)
     run_sync(env, config)
     env.logger.info("done")
 
