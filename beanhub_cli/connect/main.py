@@ -201,7 +201,7 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
     from nacl.public import SealedBox
 
     if not hasattr(tarfile, "data_filter") and not unsafe_tar_extract:
-        env.logger.error(
+        logger.error(
             "You need to use Python >= 3.11 in order to safely unpack the downloaded tar file, or you need to pass "
             "in --unsafe-tar-extract argument to allow unsafe tar file extracting"
         )
@@ -222,7 +222,7 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
             client=client,
         )
         dump_id = resp.id
-        env.logger.info(
+        logger.info(
             "Created dump [green]%s[/] with public_key [green]%s[/], waiting for updates ...",
             dump_id,
             public_key,
@@ -238,12 +238,12 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
                 client=client,
             )
             if resp.state == DumpRequestState.FAILED:
-                env.logger.error("Failed to dump with error: %s", resp.error_message)
+                logger.error("Failed to dump with error: %s", resp.error_message)
                 sys.exit(-1)
             elif resp.state == DumpRequestState.COMPLETE:
                 break
             else:
-                env.logger.debug("State is %s, keep polling...", resp.state)
+                logger.debug("State is %s, keep polling...", resp.state)
 
     download_url = resp.download_url
     sealed_box = SealedBox(private_key)
@@ -262,7 +262,7 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
                 encrypted_file.write(chunk)
         encrypted_file.flush()
         encrypted_file.seek(0)
-        env.logger.info("Decrypting downloaded file ...")
+        logger.info("Decrypting downloaded file ...")
 
         # delay import for testing purpose
         from .encryption import decrypt_file
@@ -273,4 +273,4 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
         )
         extract_tar(input_file=decrypted_file, logger=env.logger)
 
-    env.logger.info("done")
+    logger.info("done")
