@@ -57,7 +57,7 @@ def check_imports(extra_deps_set: ExtraDepsSet, logger: logging.Logger | None = 
             run_check_imports(
                 logger=logger,
                 module_names=EXTRA_DEPS[extra_deps_set],
-                required_extras=extra_deps_set.value.lower(),
+                required_extras=[extra_deps_set.value.lower()],
             )
             return func(*args, **kwargs)
 

@@ -146,8 +146,8 @@ def run_sync(env: Environment, config: ConnectConfig):
     help='Which repository to run sync on, in "<username>/<repo_name>" format',
 )
 @pass_env
-@handle_api_exception(logger)
 @check_imports(ExtraDepsSet.LOGIN, logger)
+@handle_api_exception(logger)
 def sync(env: Environment, repo: str | None):
     config = ensure_config(api_base_url=env.api_base_url, repo=repo)
     run_sync(env, config)
@@ -177,8 +177,8 @@ def sync(env: Environment, repo: str | None):
     help="Allow unsafe tar extraction, mostly for Python < 3.11",
 )
 @pass_env
-@handle_api_exception(logger)
 @check_imports(ExtraDepsSet.CONNECT, logger)
+@handle_api_exception(logger)
 def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: bool):
     import httpx
     from ..internal_api.api.connect import create_dump_request

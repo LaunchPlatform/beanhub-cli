@@ -76,8 +76,8 @@ def run_login(client: "Client"):
 
 @cli.command(name="login", help="Login your BeanHub account")
 @pass_env
-@handle_api_exception(logger)
 @check_imports(ExtraDepsSet.LOGIN, logger)
+@handle_api_exception(logger)
 def main(env: Environment):
     from .internal_api.client import Client
 
