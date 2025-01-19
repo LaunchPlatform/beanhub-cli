@@ -1,10 +1,8 @@
-import enum
 import json
 import sys
 import tarfile
 import tempfile
 import time
-import urllib.parse
 
 import click
 import httpx
@@ -32,7 +30,6 @@ from ..utils import check_imports
 from .cli import cli
 from .config import ConnectConfig
 from .config import ensure_config
-from .encryption import decrypt_file
 
 TABLE_HEADER_STYLE = "yellow"
 TABLE_COLUMN_STYLE = "cyan"
@@ -252,14 +249,14 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
         encrypted_file.flush()
         encrypted_file.seek(0)
         env.logger.info("Decrypting downloaded file ...")
+
+        # delay import for testing purpose
+        from .encryption import decrypt_file
+        from .file_io import extract_tar
+
         decrypt_file(
             input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
         )
-        with tarfile.open(fileobj=decrypted_file, mode="r:gz") as tar_file:
-            if hasattr(tarfile, "data_filter"):
-                tar_file.extractall(filter="data")
-            else:
-                env.logger.warning("Performing unsafe tar file extracting")
-                tar_file.extractall()
+        extract_tar(input_file=decrypted_file, logger=env.logger)
 
     env.logger.info("done")
