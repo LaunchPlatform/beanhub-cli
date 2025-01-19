@@ -57,7 +57,7 @@ def run_login(logger: logging.Logger, client: "Client"):
                     access_token=AccessToken(token=payload.token),
                 )
             )
-            logger.info("Session access granted, saved config to %s", get_config_path)
+            logger.info("Session access granted, saved config to %s", get_config_path())
             break
         elif resp.status_code == 202:
             logger.debug("Session access not granted yet, try again later")

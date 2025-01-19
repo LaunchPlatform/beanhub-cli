@@ -34,3 +34,5 @@ def cli(env: Environment, log_level: str):
         handlers=[RichHandler(console=console)],
         force=True,
     )
+    httpx_logger = logging.getLogger("httpx")
+    httpx_logger.level = logging.WARNING
