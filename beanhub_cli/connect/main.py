@@ -180,6 +180,7 @@ def sync(env: Environment, repo: str | None):
     help="Allow unsafe tar extraction, mostly for Python < 3.11",
 )
 @pass_env
+@handle_api_exception(logger)
 def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: bool):
     check_imports(
         logger=env.logger,

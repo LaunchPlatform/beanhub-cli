@@ -4,6 +4,7 @@ import sys
 import time
 import webbrowser
 
+from .api_helpers import handle_api_exception
 from .cli import cli
 from .config import AccessToken
 from .config import Config
@@ -15,7 +16,10 @@ from .environment import pass_env
 from .utils import check_imports
 
 
-def run_login(logger: logging.Logger, client: "Client"):
+logger = logging.getLogger(__name__)
+
+
+def run_login(client: "Client"):
     from .internal_api.api.auth import create_auth_session
     from .internal_api.api.auth import poll_auth_session
     from .internal_api.models import AuthSessionNotReadyResponse
@@ -72,6 +76,7 @@ def run_login(logger: logging.Logger, client: "Client"):
 
 @cli.command(name="login", help="Login your BeanHub account")
 @pass_env
+@handle_api_exception(logger)
 def main(env: Environment):
     check_imports(
         logger=env.logger,
@@ -85,13 +90,13 @@ def main(env: Environment):
     config = load_config()
     if config is not None and config.access_token is not None:
         # TODO: ask the user if they want to log out the original session first
-        env.logger.error(
+        logger.error(
             "Already logged in, if you want to login again, please delete the config file at %s first",
             config_path,
         )
         sys.exit(-1)
 
-    env.logger.info("Creating auth session ...")
+    logger.info("Creating auth session ...")
     with Client(base_url=env.api_base_url) as client:
         client.raise_on_unexpected_status = True
-        run_login(logger=env.logger, client=client)
+        run_login(client=client)
