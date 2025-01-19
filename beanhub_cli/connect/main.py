@@ -6,7 +6,6 @@ import tempfile
 import time
 
 import click
-import httpx
 import rich
 from rich import box
 from rich.markup import escape
@@ -181,6 +180,7 @@ def sync(env: Environment, repo: str | None):
 @handle_api_exception(logger)
 @check_imports(ExtraDepsSet.CONNECT, logger)
 def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: bool):
+    import httpx
     from ..internal_api.api.connect import create_dump_request
     from ..internal_api.api.connect import get_dump_request
     from ..internal_api.models import CreateDumpRequestRequest
