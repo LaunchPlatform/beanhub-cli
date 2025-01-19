@@ -1,4 +1,5 @@
 import pathlib
+import platform
 import secrets
 import uuid
 
@@ -20,14 +21,16 @@ def mock_home(tmp_path: pathlib.Path, mocker: MockFixture) -> pathlib.Path:
         yield home_dir
 
 
+@pytest.mark.parametrize("open_browser_success", [True, False])
 def test_login(
     mock_home: pathlib.Path,
     cli_runner: CliRunner,
     httpx_mock: HTTPXMock,
     mocker: MockFixture,
+    open_browser_success: bool,
 ):
     open_browser = mocker.patch("webbrowser.open")
-    open_browser.return_value = True
+    open_browser.return_value = open_browser_success
     mock_token = secrets.token_urlsafe(8)
     secret_token = secrets.token_urlsafe(8)
     session_id = uuid.uuid4()
@@ -43,6 +46,9 @@ def test_login(
             code="ABCD-1234",
             auth_url=auth_url,
             secret_token=secret_token,
+        ),
+        match_json=dict(
+            hostname=platform.node(),
         ),
     )
     httpx_mock.add_response(
