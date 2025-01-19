@@ -14,6 +14,7 @@ from rich.padding import Padding
 from rich.table import Table
 
 from ..api_helpers import handle_api_exception
+from ..api_helpers import make_auth_client
 from ..environment import Environment
 from ..environment import pass_env
 from ..internal_api import AuthenticatedClient
@@ -61,7 +62,7 @@ def run_sync(env: Environment, config: ConnectConfig):
         extra={"markup": True, "highlighter": None},
     )
 
-    with AuthenticatedClient(base_url=env.api_base_url, token=config.token) as client:
+    with make_auth_client(base_url=env.api_base_url, token=config.token) as client:
         client.raise_on_unexpected_status = True
         resp: CreateSyncBatchResponse = create_sync_batch.sync(
             username=config.username, repo_name=config.repo, client=client
@@ -213,7 +214,7 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
     private_key = PrivateKey.generate()
     public_key = private_key.public_key.encode(URLSafeBase64Encoder).decode("ascii")
 
-    with AuthenticatedClient(base_url=env.api_base_url, token=config.token) as client:
+    with make_auth_client(base_url=env.api_base_url, token=config.token) as client:
         client.raise_on_unexpected_status = True
         resp: CreateDumpRequestResponse = create_dump_request.sync(
             body=CreateDumpRequestRequest(public_key=public_key),

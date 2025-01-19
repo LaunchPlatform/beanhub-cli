@@ -31,3 +31,11 @@ def handle_api_exception(logger: logging.Logger | None = None):
         return callee
 
     return decorator
+
+
+def make_auth_client(base_url: str, token: str) -> "AuthenticatedClient":
+    from .internal_api.client import AuthenticatedClient
+
+    return AuthenticatedClient(
+        base_url=base_url, prefix="", auth_header_name="access-token", token=token
+    )

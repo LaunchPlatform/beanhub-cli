@@ -56,6 +56,7 @@ def test_dump(
         match_json=dict(
             public_key=public_key,
         ),
+        match_headers={"access-token": mock_config.access_token.token},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/dumps/{dump_id}",
@@ -65,6 +66,7 @@ def test_dump(
             id=str(dump_id),
             state="PROCESSING",
         ),
+        match_headers={"access-token": mock_config.access_token.token},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/dumps/{dump_id}",
@@ -76,6 +78,7 @@ def test_dump(
             download_url=mock_download_url,
             encryption_key=encryption_key,
         ),
+        match_headers={"access-token": mock_config.access_token.token},
     )
     httpx_mock.add_response(
         url=mock_download_url,

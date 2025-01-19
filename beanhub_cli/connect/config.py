@@ -3,6 +3,7 @@ import logging
 import sys
 import typing
 
+from ..api_helpers import make_auth_client
 from ..config import load_config
 from ..environment import Environment
 
@@ -35,10 +36,9 @@ def ensure_config(env: Environment, repo: str | None) -> ConnectConfig:
             "No repo provided, try to determine which repo to use automatically ..."
         )
 
-        from ..internal_api import AuthenticatedClient
         from ..internal_api.api.repo import list_repo
 
-        with AuthenticatedClient(
+        with make_auth_client(
             base_url=env.api_base_url, token=config.access_token.token
         ) as client:
             client.raise_on_unexpected_status = True

@@ -21,6 +21,7 @@ def test_sync(
         json=dict(
             id=str(batch_id),
         ),
+        match_headers={"access-token": mock_config.access_token.token},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches/{batch_id}",
@@ -47,6 +48,7 @@ def test_sync(
                 ),
             ],
         ),
+        match_headers={"access-token": mock_config.access_token.token},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches/{batch_id}",
@@ -73,6 +75,7 @@ def test_sync(
                 ),
             ],
         ),
+        match_headers={"access-token": mock_config.access_token.token},
     )
     cli_runner.mix_stderr = False
     result = cli_runner.invoke(cli, ["connect", "sync"])
