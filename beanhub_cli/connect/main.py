@@ -1,4 +1,5 @@
 import json
+import logging
 import sys
 import tarfile
 import tempfile
@@ -12,6 +13,7 @@ from rich.markup import escape
 from rich.padding import Padding
 from rich.table import Table
 
+from ..api_helpers import handle_api_exception
 from ..environment import Environment
 from ..environment import pass_env
 from ..internal_api import AuthenticatedClient
@@ -30,6 +32,8 @@ from ..utils import check_imports
 from .cli import cli
 from .config import ConnectConfig
 from .config import ensure_config
+
+logger = logging.getLogger(__name__)
 
 TABLE_HEADER_STYLE = "yellow"
 TABLE_COLUMN_STYLE = "cyan"
@@ -141,6 +145,7 @@ def run_sync(env: Environment, config: ConnectConfig):
     help='Which repository to run sync on, in "<username>/<repo_name>" format',
 )
 @pass_env
+@handle_api_exception(logger)
 def sync(env: Environment, repo: str | None):
     check_imports(
         logger=env.logger,

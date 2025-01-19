@@ -4,7 +4,6 @@ import sys
 import typing
 
 from ..config import load_config
-from ..environment import Environment
 
 
 @dataclasses.dataclass

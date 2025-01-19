@@ -2,6 +2,7 @@ import logging
 import sys
 
 
+# TODO: make this a decorator instead
 def check_imports(
     logger: logging.Logger, module_names: list[str], required_extras: list[str]
 ):
