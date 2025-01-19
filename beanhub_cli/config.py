@@ -45,5 +45,5 @@ def save_config(config: Config, file_path: pathlib.Path | None = None):
     # TODO: for now we save the config as plaintext. We should consider to use OS keychain service in the future
     #       for better security
     with file_path.open("wb") as fo:
-        obj = config.model_dump(mode="json")
+        obj = config.model_dump(mode="json", exclude_none=True)
         tomli_w.dump(obj, fo)
