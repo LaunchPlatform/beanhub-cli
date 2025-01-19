@@ -14,7 +14,7 @@ from .config import save_config
 from .environment import Environment
 from .environment import pass_env
 from .utils import check_imports
-
+from .utils import ExtraDepsSet
 
 logger = logging.getLogger(__name__)
 
@@ -77,13 +77,8 @@ def run_login(client: "Client"):
 @cli.command(name="login", help="Login your BeanHub account")
 @pass_env
 @handle_api_exception(logger)
+@check_imports(ExtraDepsSet.LOGIN, logger)
 def main(env: Environment):
-    check_imports(
-        logger=env.logger,
-        module_names=["httpx", "attrs", "dateutil", "tomli", "tomli_w"],
-        required_extras=["login"],
-    )
-
     from .internal_api.client import Client
 
     config_path = get_config_path()

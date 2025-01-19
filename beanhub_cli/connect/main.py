@@ -30,6 +30,7 @@ from ..internal_api.models import GetSyncBatchResponse
 from ..internal_api.models import HTTPValidationError
 from ..internal_api.models import PlaidItemSyncState
 from ..utils import check_imports
+from ..utils import ExtraDepsSet
 from .cli import cli
 from .config import ConnectConfig
 from .config import ensure_config
@@ -153,12 +154,8 @@ def run_sync(env: Environment, config: ConnectConfig):
 )
 @pass_env
 @handle_api_exception(logger)
+@check_imports(ExtraDepsSet.LOGIN, logger)
 def sync(env: Environment, repo: str | None):
-    check_imports(
-        logger=env.logger,
-        module_names=["httpx", "attrs", "dateutil", "tomli", "tomli_w"],
-        required_extras=["login"],
-    )
     config = ensure_config(api_base_url=env.api_base_url, repo=repo)
     run_sync(env, config)
     env.logger.info("done")
@@ -188,21 +185,8 @@ def sync(env: Environment, repo: str | None):
 )
 @pass_env
 @handle_api_exception(logger)
+@check_imports(ExtraDepsSet.CONNECT, logger)
 def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: bool):
-    check_imports(
-        logger=env.logger,
-        module_names=[
-            "httpx",
-            "attrs",
-            "dateutil",
-            "tomli",
-            "tomli_w",
-            "nacl",
-            "cryptography",
-        ],
-        required_extras=["connect"],
-    )
-
     from nacl.encoding import URLSafeBase64Encoder
     from nacl.public import PrivateKey
     from nacl.public import SealedBox

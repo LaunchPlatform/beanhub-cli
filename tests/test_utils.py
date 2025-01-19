@@ -3,14 +3,14 @@ import logging
 import pytest
 from pytest_mock import MockFixture
 
-from beanhub_cli.utils import check_imports
+from beanhub_cli.utils import run_check_imports
 
 
 def test_check_imports(mocker: MockFixture):
     logger = logging.getLogger(__name__)
     spy = mocker.spy(logger, "error")
     with pytest.raises(SystemExit) as exp:
-        check_imports(
+        run_check_imports(
             logger=logger,
             module_names=["never_ever_exists0", "never_ever_exists1"],
             required_extras=["extras0", "extras1"],
@@ -28,7 +28,7 @@ def test_check_imports(mocker: MockFixture):
 def test_check_imports_no_problem(mocker: MockFixture):
     logger = logging.getLogger(__name__)
     spy = mocker.spy(logger, "error")
-    check_imports(
+    run_check_imports(
         logger=logger,
         module_names=["sys"],
         required_extras=["extras"],
