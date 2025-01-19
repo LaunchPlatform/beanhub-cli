@@ -49,6 +49,13 @@ def ensure_config(api_base_url: str, repo: str | None) -> ConnectConfig:
                 username = active_repo.username
                 repo_name = active_repo.name
             else:
+                if len(active_repos) > 1:
+                    logger.error(
+                        "Cannot determine repo automatically because there are multiple active repos: %s",
+                        ", ".join(
+                            [f"{repo.username}/{repo.name}" for repo in active_repos]
+                        ),
+                    )
                 logger.error(
                     'You need to provide a repo by -r argument, such as "myuser/myrepo" or define a default repo in your config file'
                 )
