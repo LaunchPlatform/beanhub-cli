@@ -17,7 +17,6 @@ from ..api_helpers import handle_api_exception
 from ..api_helpers import make_auth_client
 from ..environment import Environment
 from ..environment import pass_env
-from ..internal_api import AuthenticatedClient
 from ..internal_api.api.connect import create_dump_request
 from ..internal_api.api.connect import create_sync_batch
 from ..internal_api.api.connect import get_dump_request
@@ -28,6 +27,7 @@ from ..internal_api.models import CreateSyncBatchResponse
 from ..internal_api.models import DumpRequestState
 from ..internal_api.models import GetDumpRequestResponse
 from ..internal_api.models import GetSyncBatchResponse
+from ..internal_api.models import HTTPValidationError
 from ..internal_api.models import PlaidItemSyncState
 from ..utils import check_imports
 from .cli import cli
@@ -67,8 +67,14 @@ def run_sync(env: Environment, config: ConnectConfig):
         resp: CreateSyncBatchResponse = create_sync_batch.sync(
             username=config.username, repo_name=config.repo, client=client
         )
+        if isinstance(resp, HTTPValidationError):
+            logger.error(
+                "Failed to create sync batch with error: %s",
+                resp.additional_properties.get("error", resp.detail),
+            )
+            sys.exit(-1)
         batch_id = resp.id
-        env.logger.info(
+        logger.info(
             "Created sync batch [green]%s[/], waiting for updates ...",
             batch_id,
             extra={"markup": True, "highlighter": None},
@@ -95,7 +101,7 @@ def run_sync(env: Environment, config: ConnectConfig):
             if progress >= total:
                 break
             else:
-                env.logger.info(
+                logger.info(
                     "Still processing, [green]%s[/] out of [green]%s[/]",
                     progress,
                     total,
@@ -130,7 +136,7 @@ def run_sync(env: Environment, config: ConnectConfig):
         table.add_column("Error", style=TABLE_COLUMN_STYLE)
         for sync in bad_terms:
             table.add_row(
-                escape(sync["id"]),
+                escape(sync.id),
                 escape(sync.item.institution_name),
                 escape(sync.state),
                 escape(sync.error_message),

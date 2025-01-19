@@ -5,7 +5,6 @@ import typing
 
 from ..api_helpers import make_auth_client
 from ..config import load_config
-from ..environment import Environment
 
 logger = logging.getLogger(__name__)
 
