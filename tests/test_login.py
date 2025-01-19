@@ -9,16 +9,9 @@ from click.testing import CliRunner
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockFixture
 
+from beanhub_cli.config import Config
 from beanhub_cli.config import load_config
 from beanhub_cli.main import cli
-
-
-@pytest.fixture
-def mock_home(tmp_path: pathlib.Path, mocker: MockFixture) -> pathlib.Path:
-    home_dir = tmp_path / "home"
-    home_dir.mkdir()
-    with mocker.patch("pathlib.Path.home", return_value=home_dir):
-        yield home_dir
 
 
 @pytest.mark.parametrize("open_browser_success", [True, False])
@@ -83,3 +76,14 @@ def test_login(
     config = load_config()
     assert config.access_token.token == mock_token
     assert config.repo is None
+
+
+def test_already_login(
+    cli_runner: CliRunner,
+    mock_config: Config,
+):
+    _ = mock_config
+    cli_runner.mix_stderr = False
+    result = cli_runner.invoke(cli, ["login"])
+    assert result.exit_code == -1
+    assert "Already logged in" in result.stderr

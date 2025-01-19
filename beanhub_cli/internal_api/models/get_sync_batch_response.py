@@ -1,6 +1,7 @@
 from typing import Any
 from typing import TYPE_CHECKING
 from typing import TypeVar
+from uuid import UUID
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -16,16 +17,16 @@ T = TypeVar("T", bound="GetSyncBatchResponse")
 class GetSyncBatchResponse:
     """
     Attributes:
-        id (str):
+        id (UUID):
         syncs (list['SyncData']):
     """
 
-    id: str
+    id: UUID
     syncs: list["SyncData"]
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        id = self.id
+        id = str(self.id)
 
         syncs = []
         for syncs_item_data in self.syncs:
@@ -48,7 +49,7 @@ class GetSyncBatchResponse:
         from ..models.sync_data import SyncData
 
         d = src_dict.copy()
-        id = d.pop("id")
+        id = UUID(d.pop("id"))
 
         syncs = []
         _syncs = d.pop("syncs")

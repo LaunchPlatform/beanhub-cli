@@ -1,5 +1,6 @@
 import dataclasses
 import sys
+import typing
 
 from ..config import load_config
 from ..environment import Environment
@@ -8,7 +9,14 @@ from ..environment import Environment
 @dataclasses.dataclass
 class ConnectConfig:
     token: str
+    username: str
     repo: str
+
+
+def parse_repo(repo: str | None) -> typing.Tuple[str | None, str | None]:
+    if repo is None:
+        return None, None
+    return tuple(repo.split("/", 1))
 
 
 # TODO: maybe extract this part to a shared env for connect command?
@@ -24,7 +32,9 @@ def ensure_config(env: Environment, repo: str | None) -> ConnectConfig:
             'You need to provide a repo by -r argument, such as "myuser/myrepo" or define a default repo in your config file'
         )
         sys.exit(-1)
+    username, repo_name = parse_repo(repo if repo is not None else config.repo.default)
     return ConnectConfig(
         token=config.access_token.token,
-        repo=repo if repo is not None else config.repo.default,
+        username=username,
+        repo=repo_name,
     )

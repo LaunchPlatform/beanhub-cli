@@ -2,6 +2,7 @@ from typing import Any
 from typing import cast
 from typing import TypeVar
 from typing import Union
+from uuid import UUID
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -17,14 +18,14 @@ T = TypeVar("T", bound="GetDumpRequestResponse")
 class GetDumpRequestResponse:
     """
     Attributes:
-        id (str):
+        id (UUID):
         state (DumpRequestState):
         encryption_key (Union[None, Unset, str]):
         download_url (Union[None, Unset, str]):
         error_message (Union[None, Unset, str]):
     """
 
-    id: str
+    id: UUID
     state: DumpRequestState
     encryption_key: Union[None, Unset, str] = UNSET
     download_url: Union[None, Unset, str] = UNSET
@@ -32,7 +33,7 @@ class GetDumpRequestResponse:
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        id = self.id
+        id = str(self.id)
 
         state = self.state.value
 
@@ -74,7 +75,7 @@ class GetDumpRequestResponse:
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         d = src_dict.copy()
-        id = d.pop("id")
+        id = UUID(d.pop("id"))
 
         state = DumpRequestState(d.pop("state"))
 
