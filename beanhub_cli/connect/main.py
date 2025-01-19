@@ -17,18 +17,6 @@ from ..api_helpers import handle_api_exception
 from ..api_helpers import make_auth_client
 from ..environment import Environment
 from ..environment import pass_env
-from ..internal_api.api.connect import create_dump_request
-from ..internal_api.api.connect import create_sync_batch
-from ..internal_api.api.connect import get_dump_request
-from ..internal_api.api.connect import get_sync_batch
-from ..internal_api.models import CreateDumpRequestRequest
-from ..internal_api.models import CreateDumpRequestResponse
-from ..internal_api.models import CreateSyncBatchResponse
-from ..internal_api.models import DumpRequestState
-from ..internal_api.models import GetDumpRequestResponse
-from ..internal_api.models import GetSyncBatchResponse
-from ..internal_api.models import HTTPValidationError
-from ..internal_api.models import PlaidItemSyncState
 from ..utils import check_imports
 from ..utils import ExtraDepsSet
 from .cli import cli
@@ -42,21 +30,27 @@ TABLE_COLUMN_STYLE = "cyan"
 SPOOLED_FILE_MAX_SIZE = 1024 * 1024 * 5
 
 
-GOOD_TERMINAL_SYNC_STATES = frozenset(
-    [
-        PlaidItemSyncState.IMPORT_COMPLETE,
-        PlaidItemSyncState.IMPORT_COMPLETE_NO_CHANGES,
-    ]
-)
-BAD_TERMINAL_SYNC_STATES = frozenset(
-    [
-        PlaidItemSyncState.IMPORT_FAILED,
-        PlaidItemSyncState.SYNC_FAILED,
-    ]
-)
-
-
 def run_sync(env: Environment, config: ConnectConfig):
+    from ..internal_api.api.connect import create_sync_batch
+    from ..internal_api.api.connect import get_sync_batch
+    from ..internal_api.models import CreateSyncBatchResponse
+    from ..internal_api.models import GetSyncBatchResponse
+    from ..internal_api.models import HTTPValidationError
+    from ..internal_api.models import PlaidItemSyncState
+
+    GOOD_TERMINAL_SYNC_STATES = frozenset(
+        [
+            PlaidItemSyncState.IMPORT_COMPLETE,
+            PlaidItemSyncState.IMPORT_COMPLETE_NO_CHANGES,
+        ]
+    )
+    BAD_TERMINAL_SYNC_STATES = frozenset(
+        [
+            PlaidItemSyncState.IMPORT_FAILED,
+            PlaidItemSyncState.SYNC_FAILED,
+        ]
+    )
+
     logger.info(
         "Running sync batch for repo [green]%s[/]",
         config.repo,
@@ -187,6 +181,12 @@ def sync(env: Environment, repo: str | None):
 @handle_api_exception(logger)
 @check_imports(ExtraDepsSet.CONNECT, logger)
 def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: bool):
+    from ..internal_api.api.connect import create_dump_request
+    from ..internal_api.api.connect import get_dump_request
+    from ..internal_api.models import CreateDumpRequestRequest
+    from ..internal_api.models import CreateDumpRequestResponse
+    from ..internal_api.models import DumpRequestState
+    from ..internal_api.models import GetDumpRequestResponse
     from nacl.encoding import URLSafeBase64Encoder
     from nacl.public import PrivateKey
     from nacl.public import SealedBox

@@ -9,8 +9,8 @@ def handle_api_exception(logger: logging.Logger | None = None):
     def decorator(func: typing.Callable):
         @functools.wraps(func)
         def callee(*args, **kwargs):
-            from beanhub_cli.internal_api.errors import UnexpectedStatus
-            from beanhub_cli.internal_api.models import GenericError
+            from .internal_api.errors import UnexpectedStatus
+            from .internal_api.models import GenericError
 
             try:
                 return func(*args, **kwargs)
