@@ -144,7 +144,7 @@ def run_sync(env: Environment, config: ConnectConfig):
 def sync(env: Environment, repo: str | None):
     check_imports(
         logger=env.logger,
-        module_names=["requests", "tomli", "tomli_w"],
+        module_names=["httpx", "attrs", "dateutil", "tomli", "tomli_w"],
         required_extras=["login"],
     )
     config = ensure_config(env, repo=repo)
@@ -178,7 +178,15 @@ def sync(env: Environment, repo: str | None):
 def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: bool):
     check_imports(
         logger=env.logger,
-        module_names=["requests", "tomli", "tomli_w", "nacl", "cryptography"],
+        module_names=[
+            "httpx",
+            "attrs",
+            "dateutil",
+            "tomli",
+            "tomli_w",
+            "nacl",
+            "cryptography",
+        ],
         required_extras=["connect"],
     )
 

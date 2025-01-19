@@ -12,18 +12,18 @@ from .config import load_config
 from .config import save_config
 from .environment import Environment
 from .environment import pass_env
-from .internal_api.api.auth import create_auth_session
-from .internal_api.api.auth import poll_auth_session
-from .internal_api.client import Client
-from .internal_api.models import AuthSessionNotReadyResponse
-from .internal_api.models import AuthSessionPollResponse
-from .internal_api.models import AuthSessionRequest
-from .internal_api.models import GenericError
-from .internal_api.types import Response
 from .utils import check_imports
 
 
-def run_login(logger: logging.Logger, client: Client):
+def run_login(logger: logging.Logger, client: "Client"):
+    from .internal_api.api.auth import create_auth_session
+    from .internal_api.api.auth import poll_auth_session
+    from .internal_api.models import AuthSessionNotReadyResponse
+    from .internal_api.models import AuthSessionPollResponse
+    from .internal_api.models import AuthSessionRequest
+    from .internal_api.models import GenericError
+    from .internal_api.types import Response
+
     auth_session = create_auth_session.sync(
         body=AuthSessionRequest(hostname=platform.node()), client=client
     )
@@ -78,6 +78,8 @@ def main(env: Environment):
         module_names=["httpx", "attrs", "dateutil", "tomli", "tomli_w"],
         required_extras=["login"],
     )
+
+    from .internal_api.client import Client
 
     config_path = get_config_path()
     config = load_config()
