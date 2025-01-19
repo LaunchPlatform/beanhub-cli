@@ -1,4 +1,5 @@
 import dataclasses
+import logging
 import sys
 import typing
 
@@ -20,15 +21,15 @@ def parse_repo(repo: str | None) -> typing.Tuple[str | None, str | None]:
 
 
 # TODO: maybe extract this part to a shared env for connect command?
-def ensure_config(env: Environment, repo: str | None) -> ConnectConfig:
+def ensure_config(repo: str | None, logger: logging.Logger) -> ConnectConfig:
     config = load_config()
     if config is None or config.access_token is None:
-        env.logger.error(
+        logger.error(
             'You need to login into your BeanHub account with "bh login" command first'
         )
         sys.exit(-1)
     if repo is None and (config.repo is None or config.repo.default is None):
-        env.logger.error(
+        logger.error(
             'You need to provide a repo by -r argument, such as "myuser/myrepo" or define a default repo in your config file'
         )
         sys.exit(-1)
