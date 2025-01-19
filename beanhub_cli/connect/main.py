@@ -153,7 +153,7 @@ def sync(env: Environment, repo: str | None):
         module_names=["httpx", "attrs", "dateutil", "tomli", "tomli_w"],
         required_extras=["login"],
     )
-    config = ensure_config(env=env, repo=repo)
+    config = ensure_config(api_base_url=env.api_base_url, repo=repo)
     run_sync(env, config)
     env.logger.info("done")
 
@@ -207,7 +207,7 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
             "in --unsafe-tar-extract argument to allow unsafe tar file extracting"
         )
         sys.exit(-1)
-    config = ensure_config(repo=repo, logger=env.logger)
+    config = ensure_config(api_base_url=env.api_base_url, repo=repo)
     if sync:
         run_sync(env, config)
 

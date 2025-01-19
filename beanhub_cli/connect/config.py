@@ -24,7 +24,7 @@ def parse_repo(repo: str | None) -> typing.Tuple[str | None, str | None]:
 
 
 # TODO: maybe extract this part to a shared env for connect command?
-def ensure_config(env: Environment, repo: str | None) -> ConnectConfig:
+def ensure_config(api_base_url: str, repo: str | None) -> ConnectConfig:
     config = load_config()
     if config is None or config.access_token is None:
         logger.error(
@@ -39,11 +39,11 @@ def ensure_config(env: Environment, repo: str | None) -> ConnectConfig:
         from ..internal_api.api.repo import list_repo
 
         with make_auth_client(
-            base_url=env.api_base_url, token=config.access_token.token
+            base_url=api_base_url, token=config.access_token.token
         ) as client:
             client.raise_on_unexpected_status = True
             resp = list_repo.sync(client=client)
-            active_repos = list(filter(lambda: repo.active, resp.repositories))
+            active_repos = list(filter(lambda repo: repo.active, resp.repositories))
             if len(active_repos) == 1:
                 active_repo = active_repos[0]
                 username = active_repo.username
