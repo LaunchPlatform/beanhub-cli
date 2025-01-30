@@ -62,3 +62,23 @@ Like this:
 ```bash
 bh connect dump --sync
 ```
+
+## Dump detailed accounts information
+
+In some cases, you may want to get detailed information about the bank accounts, such as the current balance, currency, full name, and type of account.
+You can enrich the transactions with detailed bank account information during your automatic import process.
+To do so, you only need to run the dump command with the `--output-accounts` argument pointing to the filename or folder to dump the account CSV file.
+For example:
+
+```bash
+bn connect dump --output-accounts=my-accounts.csv
+```
+
+If the provided output accounts path is a directory, the default output filename would be `accounts.csv`.
+Like this:
+
+```bash
+bn connect dump --output-accounts=my-folder
+```
+
+It will end up outputting the accounts CSV file at `my-folder/accounts.csv.`
