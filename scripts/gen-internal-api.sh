@@ -5,5 +5,5 @@ poetry run openapi-python-client generate \
   --config=data/internal-api-config.yaml \
   --output-path=internal_api_output
 
-mv internal_api_output/internal_api/ beanhub_cli/internal_api/
+mv internal_api_output/internal_api/ beanhub_cli/internal_api
 rm -rf internal_api_output/
