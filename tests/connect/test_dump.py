@@ -20,12 +20,14 @@ def mock_private_key(mocker: MockFixture) -> PrivateKey:
         yield key
 
 
+@pytest.mark.parametrize("output_accounts", [False, True])
 def test_dump(
     cli_runner: CliRunner,
     mock_config: Config,
     httpx_mock: HTTPXMock,
     mock_private_key: PrivateKey,
     mocker: MockFixture,
+    output_accounts: bool,
 ):
     mock_decrypt_file = mocker.patch("beanhub_cli.connect.encryption.decrypt_file")
     mock_extract_tar = mocker.patch("beanhub_cli.connect.file_io.extract_tar")
@@ -35,6 +37,7 @@ def test_dump(
         "ascii"
     )
     mock_download_url = "https://example.com/download"
+    mock_accounts_download_url = "https://example.com/download-accounts"
     box = SealedBox(mock_private_key)
     encryption_key = box.encrypt(
         json.dumps(
@@ -55,6 +58,7 @@ def test_dump(
         ),
         match_json=dict(
             public_key=public_key,
+            output_accounts=output_accounts,
         ),
         match_headers={"access-token": mock_config.access_token.token},
     )
@@ -77,6 +81,11 @@ def test_dump(
             state="COMPLETE",
             download_url=mock_download_url,
             encryption_key=encryption_key,
+            **(
+                dict(accounts_download_url=mock_accounts_download_url)
+                if output_accounts
+                else {}
+            ),
         ),
         match_headers={"access-token": mock_config.access_token.token},
     )
@@ -86,9 +95,26 @@ def test_dump(
         status_code=200,
         content=b"MOCK_FILE_CONTENT",
     )
+    if output_accounts:
+        httpx_mock.add_response(
+            url=mock_accounts_download_url,
+            method="GET",
+            status_code=200,
+            content=b"MOCK_ACCOUNTS_FILE_CONTENT",
+        )
 
     cli_runner.mix_stderr = False
-    result = cli_runner.invoke(cli, ["connect", "dump"])
+    result = cli_runner.invoke(
+        cli,
+        [
+            "connect",
+            "dump",
+            *((f"--output-accounts=.",) if output_accounts else tuple()),
+        ],
+    )
     assert result.exit_code == 0
-    mock_decrypt_file.assert_called_once()
+    if not output_accounts:
+        mock_decrypt_file.assert_called_once()
+    else:
+        assert mock_decrypt_file.call_count == 2
     mock_extract_tar.assert_called_once()

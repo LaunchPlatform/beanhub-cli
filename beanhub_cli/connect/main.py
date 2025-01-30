@@ -1,5 +1,6 @@
 import json
 import logging
+import pathlib
 import sys
 import tarfile
 import tempfile
@@ -171,6 +172,11 @@ def sync(env: Environment, repo: str | None):
     help="Run sync first before running dump",
 )
 @click.option(
+    "--output-accounts",
+    type=click.Path(writable=True),
+    help="File path of Bank accounts CSV file to write to, if a folder is provided, default filename accounts.csv will be used",
+)
+@click.option(
     "--unsafe-tar-extract",
     type=bool,
     is_flag=True,
@@ -179,7 +185,13 @@ def sync(env: Environment, repo: str | None):
 @pass_env
 @check_imports(ExtraDepsSet.CONNECT, logger)
 @handle_api_exception(logger)
-def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: bool):
+def dump(
+    env: Environment,
+    repo: str | None,
+    sync: bool,
+    output_accounts: str | None,
+    unsafe_tar_extract: bool,
+):
     import httpx
     from ..internal_api.api.connect import create_dump_request
     from ..internal_api.api.connect import get_dump_request
@@ -207,7 +219,9 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
     with make_auth_client(base_url=env.api_base_url, token=config.token) as client:
         client.raise_on_unexpected_status = True
         resp: CreateDumpRequestResponse = create_dump_request.sync(
-            body=CreateDumpRequestRequest(public_key=public_key),
+            body=CreateDumpRequestRequest(
+                public_key=public_key, output_accounts=output_accounts is not None
+            ),
             username=config.username,
             repo_name=config.repo,
             client=client,
@@ -263,5 +277,32 @@ def dump(env: Environment, repo: str | None, sync: bool, unsafe_tar_extract: boo
             input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
         )
         extract_tar(input_file=decrypted_file, logger=env.logger)
+
+    if output_accounts is not None and resp.accounts_download_url is not None:
+        output_accounts = pathlib.Path(output_accounts)
+        if output_accounts.is_dir():
+            output_accounts_path = output_accounts / "accounts.csv"
+        else:
+            output_accounts_path = output_accounts
+        with (
+            tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as encrypted_file,
+            output_accounts_path.open("wb") as decrypted_file,
+        ):
+            with httpx.stream("GET", resp.accounts_download_url) as req:
+                for chunk in req.iter_bytes():
+                    encrypted_file.write(chunk)
+            encrypted_file.flush()
+            encrypted_file.seek(0)
+            logger.info(
+                "Decrypting downloaded accounts file to %s ...", output_accounts_path
+            )
+
+            # delay import for testing purpose
+            from .encryption import decrypt_file
+            from .file_io import extract_tar
+
+            decrypt_file(
+                input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
+            )
 
     logger.info("done")

@@ -22,6 +22,7 @@ class GetDumpRequestResponse:
         state (DumpRequestState):
         encryption_key (Union[None, Unset, str]):
         download_url (Union[None, Unset, str]):
+        accounts_download_url (Union[None, Unset, str]):
         error_message (Union[None, Unset, str]):
     """
 
@@ -29,6 +30,7 @@ class GetDumpRequestResponse:
     state: DumpRequestState
     encryption_key: Union[None, Unset, str] = UNSET
     download_url: Union[None, Unset, str] = UNSET
+    accounts_download_url: Union[None, Unset, str] = UNSET
     error_message: Union[None, Unset, str] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -49,6 +51,12 @@ class GetDumpRequestResponse:
         else:
             download_url = self.download_url
 
+        accounts_download_url: Union[None, Unset, str]
+        if isinstance(self.accounts_download_url, Unset):
+            accounts_download_url = UNSET
+        else:
+            accounts_download_url = self.accounts_download_url
+
         error_message: Union[None, Unset, str]
         if isinstance(self.error_message, Unset):
             error_message = UNSET
@@ -67,6 +75,8 @@ class GetDumpRequestResponse:
             field_dict["encryption_key"] = encryption_key
         if download_url is not UNSET:
             field_dict["download_url"] = download_url
+        if accounts_download_url is not UNSET:
+            field_dict["accounts_download_url"] = accounts_download_url
         if error_message is not UNSET:
             field_dict["error_message"] = error_message
 
@@ -97,6 +107,17 @@ class GetDumpRequestResponse:
 
         download_url = _parse_download_url(d.pop("download_url", UNSET))
 
+        def _parse_accounts_download_url(data: object) -> Union[None, Unset, str]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, str], data)
+
+        accounts_download_url = _parse_accounts_download_url(
+            d.pop("accounts_download_url", UNSET)
+        )
+
         def _parse_error_message(data: object) -> Union[None, Unset, str]:
             if data is None:
                 return data
@@ -111,6 +132,7 @@ class GetDumpRequestResponse:
             state=state,
             encryption_key=encryption_key,
             download_url=download_url,
+            accounts_download_url=accounts_download_url,
             error_message=error_message,
         )
 
