@@ -174,7 +174,6 @@ def sync(env: Environment, repo: str | None):
 @click.option(
     "--output-accounts",
     type=click.Path(writable=True),
-    is_flag=True,
     help="File path of Bank accounts CSV file to write to, if a folder is provided, default filename accounts.csv will be used",
 )
 @click.option(
@@ -294,7 +293,9 @@ def dump(
                     encrypted_file.write(chunk)
             encrypted_file.flush()
             encrypted_file.seek(0)
-            logger.info("Decrypting downloaded accounts file ...")
+            logger.info(
+                "Decrypting downloaded accounts file to %s ...", output_accounts_path
+            )
 
             # delay import for testing purpose
             from .encryption import decrypt_file
