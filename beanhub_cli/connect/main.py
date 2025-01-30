@@ -281,16 +281,20 @@ def dump(
 
     if output_accounts is not None and resp.accounts_download_url is not None:
         output_accounts = pathlib.Path(output_accounts)
+        if output_accounts.is_dir():
+            output_accounts_path = output_accounts / "accounts.csv"
+        else:
+            output_accounts_path = output_accounts
         with (
             tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as encrypted_file,
-            tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as decrypted_file,
+            output_accounts_path.open("wb") as decrypted_file,
         ):
             with httpx.stream("GET", resp.accounts_download_url) as req:
                 for chunk in req.iter_bytes():
                     encrypted_file.write(chunk)
             encrypted_file.flush()
             encrypted_file.seek(0)
-            logger.info("Decrypting downloaded file ...")
+            logger.info("Decrypting downloaded accounts file ...")
 
             # delay import for testing purpose
             from .encryption import decrypt_file
@@ -299,6 +303,5 @@ def dump(
             decrypt_file(
                 input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
             )
-            extract_tar(input_file=decrypted_file, logger=env.logger)
 
     logger.info("done")
