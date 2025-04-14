@@ -1,0 +1,15 @@
+import logging
+
+from ..environment import Environment
+from ..environment import pass_env
+from .cli import cli
+
+logger = logging.getLogger(__name__)
+
+
+@cli.command(
+    help="Extract data from archived email files based on rules defined .beanhub/inbox.yaml"
+)
+@pass_env
+def extract(env: Environment, repo: str | None):
+    env.logger.info("done")
