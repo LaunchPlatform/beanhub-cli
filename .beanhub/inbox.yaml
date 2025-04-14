@@ -1,7 +1,0 @@
-inputs:
-  - match: "*.eml"
-
-imports:
-  - actions:
-    - extract:
-        output_csv: "output.csv"
