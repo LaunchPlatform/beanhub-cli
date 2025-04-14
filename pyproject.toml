@@ -9,6 +9,7 @@ documentation = "https://beanhub-cli-docs.beanhub.io"
 
 [tool.poetry.scripts]
 bh = "beanhub_cli.main:cli"
+beanhub-cli = "beanhub_cli.main:cli"
 
 [tool.poetry.dependencies]
 python = "^3.10"
