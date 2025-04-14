@@ -46,7 +46,7 @@ TABLE_COLUMN_STYLE = "cyan"
     "--workdir",
     type=click.Path(exists=True, dir_okay=True, file_okay=False),
     default=str(pathlib.Path.cwd()),
-    help="The beanhub project path to work on",
+    help="The BeanHub project path to work on",
 )
 @click.option(
     "-b",
