@@ -48,8 +48,22 @@ def report_think_progress():
     default=str(pathlib.Path.cwd()),
     help="The BeanHub project path to work on",
 )
+@click.option(
+    "-m",
+    "--model",
+    type=str,
+    default="phi4",
+    help="Which Ollama model to use",
+)
+@click.option(
+    "--debug-output-folder",
+    type=click.Path(exists=True, dir_okay=True, file_okay=False),
+    help="Output files such as prompt and thinking process to the given folder to help debugging",
+)
 @pass_env
-def extract(env: Environment, config: str, workdir: str):
+def extract(
+    env: Environment, config: str, workdir: str, model: str, debug_output_folder: str
+):
     config_path = pathlib.Path(config)
     workdir_path = pathlib.Path(workdir)
     if config_path.exists():
@@ -69,9 +83,20 @@ def extract(env: Environment, config: str, workdir: str):
             extra={"markup": True, "highlighter": None},
         )
 
+    env.logger.info(
+        "Extracting data with Ollama model [green]%s[/]",
+        model,
+        extra={"markup": True, "highlighter": None},
+    )
+    progress_output_folder = None
+    if debug_output_folder:
+        progress_output_folder = pathlib.Path(debug_output_folder)
+        env.logger.info("Writing debugging files to %s folder", progress_output_folder)
     for item in process_imports(
         inbox_doc=inbox_doc,
         input_dir=workdir_path,
+        llm_model=model,
+        progress_output_folder=progress_output_folder,
         think_progress_factory=report_think_progress,
     ):
         pass
