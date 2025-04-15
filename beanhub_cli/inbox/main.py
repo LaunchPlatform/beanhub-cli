@@ -6,7 +6,10 @@ import typing
 import click
 import yaml
 from beanhub_inbox.data_types import InboxDoc
+from beanhub_inbox.processor import MatchImportRule
+from beanhub_inbox.processor import NoMatch
 from beanhub_inbox.processor import process_imports
+from beanhub_inbox.processor import StartProcessingEmail
 from rich.live import Live
 from rich.panel import Panel
 from rich.status import Status
@@ -92,6 +95,11 @@ def extract(
     if debug_output_folder:
         progress_output_folder = pathlib.Path(debug_output_folder)
         env.logger.info("Writing debugging files to %s folder", progress_output_folder)
+
+    inbox_logger = logging.getLogger("beanhub_inbox")
+    inbox_logger.setLevel(logging.WARNING)
+
+    # TODO: config logs for inbox lib
     for item in process_imports(
         inbox_doc=inbox_doc,
         input_dir=workdir_path,
@@ -99,6 +107,26 @@ def extract(
         progress_output_folder=progress_output_folder,
         think_progress_factory=report_think_progress,
     ):
-        pass
+        if isinstance(item, StartProcessingEmail):
+            logger.info(
+                "Processing email [green]%s[/]",
+                item.email_file.id,
+                extra={"markup": True, "highlighter": None},
+            )
+        elif isinstance(item, NoMatch):
+            logger.info(
+                "No import rule matched for email [green]%s[/]",
+                item.email_file.id,
+                extra={"markup": True, "highlighter": None},
+            )
+        elif isinstance(item, MatchImportRule):
+            logger.info(
+                "Import rule [green]%s[/] matched for email [green]%s[/]",
+                item.import_config.name
+                if item.import_config.name is not None
+                else item.import_rule_index,
+                item.email_file.id,
+                extra={"markup": True, "highlighter": None},
+            )
 
     env.logger.info("done")
