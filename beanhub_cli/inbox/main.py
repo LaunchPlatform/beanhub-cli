@@ -6,9 +6,12 @@ import typing
 import click
 import yaml
 from beanhub_inbox.data_types import InboxDoc
+from beanhub_inbox.processor import CSVRowExists
+from beanhub_inbox.processor import IgnoreEmail
 from beanhub_inbox.processor import MatchImportRule
 from beanhub_inbox.processor import NoMatch
 from beanhub_inbox.processor import process_imports
+from beanhub_inbox.processor import StartExtractingColumn
 from beanhub_inbox.processor import StartProcessingEmail
 from rich.live import Live
 from rich.panel import Panel
@@ -128,5 +131,23 @@ def extract(
                 item.email_file.id,
                 extra={"markup": True, "highlighter": None},
             )
-
+        elif isinstance(item, IgnoreEmail):
+            logger.info(
+                "Ignore email [green]%s[/] as instructed by import action",
+                item.email_file.id,
+                extra={"markup": True, "highlighter": None},
+            )
+        elif isinstance(item, CSVRowExists):
+            logger.info(
+                "Skip processing email [green]%s[/] as it exists in the output CSV file [green]%s[/] already",
+                item.email_file.id,
+                item.email_file.filepath,
+                extra={"markup": True, "highlighter": None},
+            )
+        elif isinstance(item, StartExtractingColumn):
+            logger.info(
+                "Extracting column [green]%s[/]",
+                item.column.name,
+                extra={"markup": True, "highlighter": None},
+            )
     env.logger.info("done")
