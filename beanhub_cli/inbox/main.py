@@ -7,12 +7,16 @@ import click
 import yaml
 from beanhub_inbox.data_types import InboxDoc
 from beanhub_inbox.processor import CSVRowExists
+from beanhub_inbox.processor import FinishExtractingColumn
+from beanhub_inbox.processor import FinishThinking
 from beanhub_inbox.processor import IgnoreEmail
 from beanhub_inbox.processor import MatchImportRule
 from beanhub_inbox.processor import NoMatch
 from beanhub_inbox.processor import process_imports
 from beanhub_inbox.processor import StartExtractingColumn
 from beanhub_inbox.processor import StartProcessingEmail
+from beanhub_inbox.processor import StartThinking
+from beanhub_inbox.processor import UpdateThinking
 from rich.live import Live
 from rich.panel import Panel
 from rich.status import Status
@@ -103,51 +107,74 @@ def extract(
     inbox_logger.setLevel(logging.WARNING)
 
     # TODO: config logs for inbox lib
-    for item in process_imports(
+    process_event_generators = process_imports(
         inbox_doc=inbox_doc,
         input_dir=workdir_path,
         llm_model=model,
         progress_output_folder=progress_output_folder,
         think_progress_factory=report_think_progress,
-    ):
-        if isinstance(item, StartProcessingEmail):
+    )
+    for event in process_event_generators:
+        if isinstance(event, StartProcessingEmail):
             logger.info(
                 "Processing email [green]%s[/]",
-                item.email_file.id,
+                event.email_file.id,
                 extra={"markup": True, "highlighter": None},
             )
-        elif isinstance(item, NoMatch):
+        elif isinstance(event, NoMatch):
             logger.info(
                 "No import rule matched for email [green]%s[/]",
-                item.email_file.id,
+                event.email_file.id,
                 extra={"markup": True, "highlighter": None},
             )
-        elif isinstance(item, MatchImportRule):
+        elif isinstance(event, MatchImportRule):
             logger.info(
                 "Import rule [green]%s[/] matched for email [green]%s[/]",
-                item.import_config.name
-                if item.import_config.name is not None
-                else item.import_rule_index,
-                item.email_file.id,
+                event.import_config.name
+                if event.import_config.name is not None
+                else event.import_rule_index,
+                event.email_file.id,
                 extra={"markup": True, "highlighter": None},
             )
-        elif isinstance(item, IgnoreEmail):
+        elif isinstance(event, IgnoreEmail):
             logger.info(
                 "Ignore email [green]%s[/] as instructed by import action",
-                item.email_file.id,
+                event.email_file.id,
                 extra={"markup": True, "highlighter": None},
             )
-        elif isinstance(item, CSVRowExists):
+        elif isinstance(event, CSVRowExists):
             logger.info(
                 "Skip processing email [green]%s[/] as it exists in the output CSV file [green]%s[/] already",
-                item.email_file.id,
-                item.email_file.filepath,
+                event.email_file.id,
+                event.email_file.filepath,
                 extra={"markup": True, "highlighter": None},
             )
-        elif isinstance(item, StartExtractingColumn):
+        elif isinstance(event, StartExtractingColumn):
             logger.info(
                 "Extracting column [green]%s[/]",
-                item.column.name,
+                event.column.name,
+                extra={"markup": True, "highlighter": None},
+            )
+        elif isinstance(event, StartThinking):
+            with Live(transient=True) as live:
+                think_log = ""
+
+                for thinking_event in process_event_generators:
+                    if isinstance(thinking_event, UpdateThinking):
+                        think_log += thinking_event.piece
+                        live.update(Panel(think_log, title="Thinking ..."))
+                    elif isinstance(thinking_event, FinishThinking):
+                        # TODO:
+                        break
+                    else:
+                        raise ValueError(
+                            f"Unexpected event type {type(thinking_event)}"
+                        )
+        elif isinstance(event, FinishExtractingColumn):
+            logger.info(
+                "  [blue]%s[/] = [blue]%s[/]",
+                event.column.name,
+                event.value,
                 extra={"markup": True, "highlighter": None},
             )
     env.logger.info("done")
