@@ -70,13 +70,24 @@ def report_think_progress():
     help="Which Ollama model to use",
 )
 @click.option(
+    "-k",
+    "--keep-thinking-log",
+    is_flag=True,
+    help="Keep the thinking log on screen after it's done",
+)
+@click.option(
     "--debug-output-folder",
     type=click.Path(exists=True, dir_okay=True, file_okay=False),
     help="Output files such as prompt and thinking process to the given folder to help debugging",
 )
 @pass_env
 def extract(
-    env: Environment, config: str, workdir: str, model: str, debug_output_folder: str
+    env: Environment,
+    config: str,
+    workdir: str,
+    model: str,
+    keep_thinking_log: bool,
+    debug_output_folder: str,
 ):
     config_path = pathlib.Path(config)
     workdir_path = pathlib.Path(workdir)
@@ -159,15 +170,20 @@ def extract(
                 extra={"markup": True, "highlighter": None},
             )
         elif isinstance(event, StartThinking):
-            with Live(transient=True) as live:
+            with Live(transient=not keep_thinking_log) as live:
                 think_log = ""
 
                 for thinking_event in process_event_generators:
                     if isinstance(thinking_event, UpdateThinking):
-                        think_log += thinking_event.piece
-                        live.update(Panel(think_log, title="Thinking ..."))
+                        if thinking_event.piece not in ("<think>", "</think>"):
+                            think_log += thinking_event.piece
+                            from rich.markdown import Markdown
+
+                            live.update(
+                                Panel(Markdown(think_log), title="Thinking ...")
+                            )
                     elif isinstance(thinking_event, FinishThinking):
-                        # TODO:
+                        # TODO: dump think log
                         break
                     else:
                         raise ValueError(
