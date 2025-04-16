@@ -192,6 +192,7 @@ def extract(
                 )
                 prompt_filepath.write_text(event.prompt)
 
+            finish_thinking = None
             with Live(transient=not keep_thinking_log) as live:
                 think_log = ""
 
@@ -205,22 +206,24 @@ def extract(
                                 Panel(Markdown(think_log), title="Thinking ...")
                             )
                     elif isinstance(thinking_event, FinishThinking):
-                        if debug_output_path is not None:
-                            thinking_filepath = (
-                                debug_output_path
-                                / f"{event.email_file.id}-{event.column.name}-thinking.txt"
-                            )
-                            logger.info(
-                                "Write thinking to [magenta]%s[/]",
-                                thinking_filepath,
-                                extra={"markup": True, "highlighter": None},
-                            )
-                            thinking_filepath.write_text(thinking_event.thinking)
+                        finish_thinking = thinking_event
                         break
                     else:
                         raise ValueError(
                             f"Unexpected event type {type(thinking_event)}"
                         )
+
+            if debug_output_path is not None:
+                thinking_filepath = (
+                    debug_output_path
+                    / f"{event.email_file.id}-{event.column.name}-thinking.txt"
+                )
+                logger.info(
+                    "Write thinking to [magenta]%s[/]",
+                    thinking_filepath,
+                    extra={"markup": True, "highlighter": None},
+                )
+                thinking_filepath.write_text(finish_thinking.thinking)
         elif isinstance(event, FinishExtractingColumn):
             logger.info(
                 "  [blue]%s[/] = [green]%s[/]",
