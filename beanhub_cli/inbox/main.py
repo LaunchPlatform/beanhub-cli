@@ -1,4 +1,5 @@
 import contextlib
+import json
 import logging
 import pathlib
 import typing
@@ -8,6 +9,7 @@ import yaml
 from beanhub_inbox.data_types import InboxDoc
 from beanhub_inbox.processor import CSVRowExists
 from beanhub_inbox.processor import FinishExtractingColumn
+from beanhub_inbox.processor import FinishExtractingRow
 from beanhub_inbox.processor import FinishThinking
 from beanhub_inbox.processor import IgnoreEmail
 from beanhub_inbox.processor import MatchImportRule
@@ -17,6 +19,8 @@ from beanhub_inbox.processor import StartExtractingColumn
 from beanhub_inbox.processor import StartProcessingEmail
 from beanhub_inbox.processor import StartThinking
 from beanhub_inbox.processor import UpdateThinking
+from rich.json import JSON
+from rich.json import JSONHighlighter
 from rich.live import Live
 from rich.panel import Panel
 from rich.status import Status
@@ -129,11 +133,10 @@ def extract(
             )
         elif isinstance(event, MatchImportRule):
             logger.info(
-                "Import rule [green]%s[/] matched for email [green]%s[/]",
+                "Import rule [green]%s[/] matched",
                 event.import_config.name
                 if event.import_config.name is not None
                 else event.import_rule_index,
-                event.email_file.id,
                 extra={"markup": True, "highlighter": None},
             )
         elif isinstance(event, IgnoreEmail):
@@ -151,7 +154,7 @@ def extract(
             )
         elif isinstance(event, StartExtractingColumn):
             logger.info(
-                "Extracting column [green]%s[/]",
+                "Extracting column [blue]%s[/]",
                 event.column.name,
                 extra={"markup": True, "highlighter": None},
             )
@@ -172,9 +175,15 @@ def extract(
                         )
         elif isinstance(event, FinishExtractingColumn):
             logger.info(
-                "  [blue]%s[/] = [blue]%s[/]",
+                "  [blue]%s[/] = [green]%s[/]",
                 event.column.name,
                 event.value,
                 extra={"markup": True, "highlighter": None},
             )
-    env.logger.info("done")
+        elif isinstance(event, FinishExtractingRow):
+            logger.info(
+                f"Finished extracting row %s",
+                json.dumps(event.row, indent=2),
+                extra={"markup": True, "highlighter": JSONHighlighter()},
+            )
+    env.logger.info("Done")
