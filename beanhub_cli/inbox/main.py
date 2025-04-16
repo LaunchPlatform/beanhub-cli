@@ -76,8 +76,9 @@ def report_think_progress():
     help="Keep the thinking log on screen after it's done",
 )
 @click.option(
+    "-d",
     "--debug-output-folder",
-    type=click.Path(exists=True, dir_okay=True, file_okay=False),
+    type=click.Path(dir_okay=True, file_okay=False, writable=True),
     help="Output files such as prompt and thinking process to the given folder to help debugging",
 )
 @pass_env
@@ -91,6 +92,10 @@ def extract(
 ):
     config_path = pathlib.Path(config)
     workdir_path = pathlib.Path(workdir)
+    debug_output_path = None
+    if debug_output_folder is not None:
+        debug_output_path = pathlib.Path(debug_output_folder)
+        debug_output_path.mkdir(parents=True, exist_ok=True)
     if config_path.exists():
         doc_payload = yaml.safe_load(config_path.read_bytes())
         inbox_doc = InboxDoc.model_validate(doc_payload)
@@ -116,7 +121,11 @@ def extract(
     progress_output_folder = None
     if debug_output_folder:
         progress_output_folder = pathlib.Path(debug_output_folder)
-        env.logger.info("Writing debugging files to %s folder", progress_output_folder)
+        env.logger.info(
+            "Writing debugging files to [magenta]%s[/] folder",
+            progress_output_folder,
+            extra={"markup": True, "highlighter": None},
+        )
 
     inbox_logger = logging.getLogger("beanhub_inbox")
     inbox_logger.setLevel(logging.WARNING)
@@ -132,8 +141,9 @@ def extract(
     for event in process_event_generators:
         if isinstance(event, StartProcessingEmail):
             logger.info(
-                "Processing email [green]%s[/]",
+                "Processing email [green]%s[/] subject: [blue]%s[/]",
                 event.email_file.id,
+                event.email_file.subject,
                 extra={"markup": True, "highlighter": None},
             )
         elif isinstance(event, NoMatch):
@@ -170,6 +180,18 @@ def extract(
                 extra={"markup": True, "highlighter": None},
             )
         elif isinstance(event, StartThinking):
+            if debug_output_path is not None:
+                prompt_filepath = (
+                    debug_output_path
+                    / f"{event.email_file.id}-{event.column.name}-prompt.txt"
+                )
+                logger.info(
+                    "Write prompt to [magenta]%s[/]",
+                    prompt_filepath,
+                    extra={"markup": True, "highlighter": None},
+                )
+                prompt_filepath.write_text(event.prompt)
+
             with Live(transient=not keep_thinking_log) as live:
                 think_log = ""
 
@@ -183,7 +205,17 @@ def extract(
                                 Panel(Markdown(think_log), title="Thinking ...")
                             )
                     elif isinstance(thinking_event, FinishThinking):
-                        # TODO: dump think log
+                        if debug_output_path is not None:
+                            thinking_filepath = (
+                                debug_output_path
+                                / f"{event.email_file.id}-{event.column.name}-thinking.txt"
+                            )
+                            logger.info(
+                                "Write thinking to [magenta]%s[/]",
+                                thinking_filepath,
+                                extra={"markup": True, "highlighter": None},
+                            )
+                            thinking_filepath.write_text(thinking_event.thinking)
                         break
                     else:
                         raise ValueError(
