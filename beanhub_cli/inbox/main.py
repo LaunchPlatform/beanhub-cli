@@ -2,7 +2,10 @@ import contextlib
 import json
 import logging
 import pathlib
-import typing
+import sys
+import tarfile
+import tempfile
+import time
 
 import click
 import yaml
@@ -19,17 +22,20 @@ from beanhub_inbox.processor import StartExtractingColumn
 from beanhub_inbox.processor import StartProcessingEmail
 from beanhub_inbox.processor import StartThinking
 from beanhub_inbox.processor import UpdateThinking
-from rich.json import JSON
 from rich.json import JSONHighlighter
 from rich.live import Live
 from rich.panel import Panel
-from rich.status import Status
 
+from ..api_helpers import handle_api_exception
+from ..auth import AuthConfig
+from ..auth import ensure_auth_config
+from ..auth import make_auth_client
 from ..environment import Environment
 from ..environment import pass_env
 from .cli import cli
 
 logger = logging.getLogger(__name__)
+SPOOLED_FILE_MAX_SIZE = 1024 * 1024 * 5
 
 
 @contextlib.contextmanager
@@ -238,3 +244,112 @@ def extract(
                 extra={"markup": True, "highlighter": JSONHighlighter()},
             )
     env.logger.info("Done")
+
+
+@cli.command(help="Dump emails files from BeanHub Inbox to your local environment")
+@click.option(
+    "-r",
+    "--repo",
+    type=str,
+    help='Which repository to run sync on, in "<username>/<repo_name>" format',
+)
+@click.option(
+    "--unsafe-tar-extract",
+    type=bool,
+    is_flag=True,
+    help="Allow unsafe tar extraction, mostly for Python < 3.11",
+)
+@pass_env
+@handle_api_exception(logger)
+def dump(
+    env: Environment,
+    repo: str | None,
+    unsafe_tar_extract: bool,
+):
+    import httpx
+    from ..internal_api.api.connect import create_dump_request
+    from ..internal_api.api.connect import get_dump_request
+    from ..internal_api.models import CreateDumpRequestRequest
+    from ..internal_api.models import CreateDumpRequestResponse
+    from ..internal_api.models import DumpRequestState
+    from ..internal_api.models import GetDumpRequestResponse
+    from nacl.encoding import URLSafeBase64Encoder
+    from nacl.public import PrivateKey
+    from nacl.public import SealedBox
+
+    if not hasattr(tarfile, "data_filter") and not unsafe_tar_extract:
+        logger.error(
+            "You need to use Python >= 3.11 in order to safely unpack the downloaded tar file, or you need to pass "
+            "in --unsafe-tar-extract argument to allow unsafe tar file extracting"
+        )
+        sys.exit(-1)
+    config = ensure_auth_config(api_base_url=env.api_base_url, repo=repo)
+
+    # TODO: compare local files and the remote files to determine which emails to pull
+
+    private_key = PrivateKey.generate()
+    public_key = private_key.public_key.encode(URLSafeBase64Encoder).decode("ascii")
+
+    with make_auth_client(base_url=env.api_base_url, token=config.token) as client:
+        client.raise_on_unexpected_status = True
+        resp: CreateDumpRequestResponse = create_dump_request.sync(
+            body=CreateDumpRequestRequest(
+                public_key=public_key, output_accounts=output_accounts is not None
+            ),
+            username=config.username,
+            repo_name=config.repo,
+            client=client,
+        )
+        dump_id = resp.id
+        logger.info(
+            "Created dump [green]%s[/] with public_key [green]%s[/], waiting for updates ...",
+            dump_id,
+            public_key,
+            extra={"markup": True, "highlighter": None},
+        )
+
+        while True:
+            time.sleep(5)
+            resp: GetDumpRequestResponse = get_dump_request.sync(
+                dump_request_id=dump_id,
+                username=config.username,
+                repo_name=config.repo,
+                client=client,
+            )
+            if resp.state == DumpRequestState.FAILED:
+                logger.error("Failed to dump with error: %s", resp.error_message)
+                sys.exit(-1)
+            elif resp.state == DumpRequestState.COMPLETE:
+                break
+            else:
+                logger.debug("State is %s, keep polling...", resp.state)
+
+    download_url = resp.download_url
+    sealed_box = SealedBox(private_key)
+    encryption_key = json.loads(
+        sealed_box.decrypt(URLSafeBase64Encoder.decode(resp.encryption_key))
+    )
+    key = URLSafeBase64Encoder.decode(encryption_key["key"])
+    iv = URLSafeBase64Encoder.decode(encryption_key["iv"])
+
+    with (
+        tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as encrypted_file,
+        tempfile.SpooledTemporaryFile(SPOOLED_FILE_MAX_SIZE) as decrypted_file,
+    ):
+        with httpx.stream("GET", download_url) as req:
+            for chunk in req.iter_bytes():
+                encrypted_file.write(chunk)
+        encrypted_file.flush()
+        encrypted_file.seek(0)
+        logger.info("Decrypting downloaded file ...")
+
+        # delay import for testing purpose
+        from ..encryption import decrypt_file
+        from ..file_io import extract_tar
+
+        decrypt_file(
+            input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
+        )
+        extract_tar(input_file=decrypted_file, logger=env.logger)
+
+    logger.info("done")

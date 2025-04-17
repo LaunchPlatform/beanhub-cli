@@ -3,14 +3,13 @@ import logging
 import sys
 import typing
 
-from ..api_helpers import make_auth_client
-from ..config import load_config
+from .config import load_config
 
 logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
-class ConnectConfig:
+class AuthConfig:
     token: str
     username: str
     repo: str
@@ -23,7 +22,7 @@ def parse_repo(repo: str | None) -> typing.Tuple[str | None, str | None]:
 
 
 # TODO: maybe extract this part to a shared env for connect command?
-def ensure_config(api_base_url: str, repo: str | None) -> ConnectConfig:
+def ensure_auth_config(api_base_url: str, repo: str | None) -> AuthConfig:
     config = load_config()
     if config is None or config.access_token is None:
         logger.error(
@@ -35,7 +34,7 @@ def ensure_config(api_base_url: str, repo: str | None) -> ConnectConfig:
             "No repo provided, try to determine which repo to use automatically ..."
         )
 
-        from ..internal_api.api.repo import list_repo
+        from .internal_api.api.repo import list_repo
 
         with make_auth_client(
             base_url=api_base_url, token=config.access_token.token
@@ -63,8 +62,16 @@ def ensure_config(api_base_url: str, repo: str | None) -> ConnectConfig:
         username, repo_name = parse_repo(
             repo if repo is not None else config.repo.default
         )
-    return ConnectConfig(
+    return AuthConfig(
         token=config.access_token.token,
         username=username,
         repo=repo_name,
+    )
+
+
+def make_auth_client(base_url: str, token: str) -> "AuthenticatedClient":
+    from .internal_api.client import AuthenticatedClient
+
+    return AuthenticatedClient(
+        base_url=base_url, prefix="", auth_header_name="access-token", token=token
     )

@@ -14,14 +14,14 @@ from rich.padding import Padding
 from rich.table import Table
 
 from ..api_helpers import handle_api_exception
-from ..api_helpers import make_auth_client
+from ..auth import AuthConfig
+from ..auth import ensure_auth_config
+from ..auth import make_auth_client
 from ..environment import Environment
 from ..environment import pass_env
 from ..utils import check_imports
 from ..utils import ExtraDepsSet
 from .cli import cli
-from .config import ConnectConfig
-from .config import ensure_config
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ TABLE_COLUMN_STYLE = "cyan"
 SPOOLED_FILE_MAX_SIZE = 1024 * 1024 * 5
 
 
-def run_sync(env: Environment, config: ConnectConfig):
+def run_sync(env: Environment, config: AuthConfig):
     from ..internal_api.api.connect import create_sync_batch
     from ..internal_api.api.connect import get_sync_batch
     from ..internal_api.models import CreateSyncBatchResponse
@@ -150,7 +150,7 @@ def run_sync(env: Environment, config: ConnectConfig):
 @check_imports(ExtraDepsSet.LOGIN, logger)
 @handle_api_exception(logger)
 def sync(env: Environment, repo: str | None):
-    config = ensure_config(api_base_url=env.api_base_url, repo=repo)
+    config = ensure_auth_config(api_base_url=env.api_base_url, repo=repo)
     run_sync(env, config)
     env.logger.info("done")
 
@@ -209,7 +209,7 @@ def dump(
             "in --unsafe-tar-extract argument to allow unsafe tar file extracting"
         )
         sys.exit(-1)
-    config = ensure_config(api_base_url=env.api_base_url, repo=repo)
+    config = ensure_auth_config(api_base_url=env.api_base_url, repo=repo)
     if sync:
         run_sync(env, config)
 
@@ -270,8 +270,8 @@ def dump(
         logger.info("Decrypting downloaded file ...")
 
         # delay import for testing purpose
-        from .encryption import decrypt_file
-        from .file_io import extract_tar
+        from ..encryption import decrypt_file
+        from ..file_io import extract_tar
 
         decrypt_file(
             input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
@@ -298,8 +298,8 @@ def dump(
             )
 
             # delay import for testing purpose
-            from .encryption import decrypt_file
-            from .file_io import extract_tar
+            from ..encryption import decrypt_file
+            from ..file_io import extract_tar
 
             decrypt_file(
                 input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
