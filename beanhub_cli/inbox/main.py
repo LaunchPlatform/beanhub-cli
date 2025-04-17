@@ -54,6 +54,7 @@ from .cli import cli
 
 logger = logging.getLogger(__name__)
 SPOOLED_FILE_MAX_SIZE = 1024 * 1024 * 5
+DEFAULT_INBOX_CONFIG_FILE = ".beanhub/inbox.yaml"
 
 
 def fetch_all_emails(
@@ -319,8 +320,8 @@ def extract(
 @click.option(
     "-c",
     "--config",
-    type=click.Path(exists=True, dir_okay=False),
-    default=".beanhub/inbox.yaml",
+    type=click.Path(dir_okay=False),
+    default=DEFAULT_INBOX_CONFIG_FILE,
     help="The path to inbox config file",
 )
 @click.option(
@@ -341,25 +342,36 @@ def extract(
 def dump(
     env: Environment,
     repo: str | None,
-    config: str,
+    config: str | None,
     workdir: str,
     unsafe_tar_extract: bool,
 ):
-    config_path = pathlib.Path(config)
-    if config_path.exists():
+    default_config_path = pathlib.Path(DEFAULT_INBOX_CONFIG_FILE)
+    if config is not None or default_config_path.exists():
+        if config is not None:
+            config_path = pathlib.Path(config)
+            if not config_path.exists():
+                logger.error("Inbox config file does not exist at %s", config_path)
+                sys.exit(-1)
+        else:
+            config_path = default_config_path
         with config_path.open("rt") as fo:
             doc_payload = yaml.safe_load(fo)
         inbox_doc = InboxDoc.model_validate(doc_payload)
+        env.logger.info(
+            "Loaded inbox doc from [green]%s[/]",
+            config,
+            extra={"markup": True, "highlighter": None},
+        )
     else:
+        env.logger.info(
+            "Loaded default inbox doc as config file is not provided by argument and does exists at the default location %s",
+            default_config_path,
+        )
         # TODO: load default
         inbox_doc = None
 
     workdir_path = pathlib.Path(workdir)
-    env.logger.info(
-        "Loaded import doc from [green]%s[/]",
-        config,
-        extra={"markup": True, "highlighter": None},
-    )
 
     if not hasattr(tarfile, "data_filter") and not unsafe_tar_extract:
         logger.error(
@@ -390,9 +402,10 @@ def dump(
         )
         dump_id = resp.id
         logger.info(
-            "Created dump [green]%s[/] with public_key [green]%s[/], waiting for updates ...",
+            "Created dump [green]%s[/] with public_key [green]%s[/], workdir=%s, waiting for updates ...",
             dump_id,
             public_key,
+            workdir_path,
             extra={"markup": True, "highlighter": None},
         )
 
