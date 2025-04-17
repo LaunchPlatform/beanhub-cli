@@ -430,6 +430,9 @@ def dump(
             inbox_doc=inbox_doc, inbox_emails=inbox_emails, workdir_path=workdir_path
         )
     )
+    if not missing_email_output_files:
+        logger.info("No missing emails found, no need to update")
+        return
 
     private_key = PrivateKey.generate()
     public_key = private_key.public_key.encode(URLSafeBase64Encoder).decode("ascii")
@@ -449,9 +452,10 @@ def dump(
         )
         dump_id = resp.id
         logger.info(
-            "Created dump [green]%s[/] with public_key [green]%s[/], workdir=%s, waiting for updates ...",
+            "Created dump [green]%s[/] with public_key [green]%s[/], email_count=[green]%s[/], workdir=[green]%s[/], waiting for updates ...",
             dump_id,
             public_key,
+            len(missing_email_output_files),
             workdir_path,
             extra={"markup": True, "highlighter": None},
         )
