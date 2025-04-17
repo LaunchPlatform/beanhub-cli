@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import pathlib
@@ -111,9 +112,45 @@ def compute_missing_emails(
                     inbox_email.id,
                 )
                 continue
-            yield inbox_email, output_file
+            yield inbox_email, output_file.relative_to(workdir)
         else:
             raise ValueError(f"Unexpected action type {type(action)}")
+
+
+def extract_tar(
+    input_file: io.BytesIO,
+    email_output_paths: dict[str, pathlib.Path],
+    workdir_path: pathlib.Path,
+    unsafe_tar_extract: bool,
+):
+    with tarfile.open(fileobj=input_file, mode="r:gz") as tar_file:
+        for member in tar_file:
+            if not member.isreg():
+                continue
+            member_path = pathlib.PurePosixPath(member.name)
+            email_id = member_path.stem
+            output_path = email_output_paths.get(email_id)
+            if output_path is None:
+                logger.error("Cannot find output path for email %s", email_id)
+                sys.exit(-1)
+            output_path.parent.mkdir(exist_ok=True, parents=True)
+            logger.info(
+                "Writing email [green]%s[/] to [green]%s[/]", email_id, output_path
+            )
+            full_output_path = workdir_path / output_path
+            has_data_filter = hasattr(tarfile, "data_filter")
+            if not has_data_filter and not unsafe_tar_extract:
+                logger.error(
+                    "You need to use Python >= 3.11 in order to safely unpack the downloaded tar file, or you need to pass "
+                    "in --unsafe-tar-extract argument to allow unsafe tar file extracting"
+                )
+                sys.exit(-1)
+            tar_file.extract(
+                member,
+                full_output_path,
+                set_attrs=False,
+                filter="data" if has_data_filter else None,
+            )
 
 
 @cli.command(
@@ -382,7 +419,7 @@ def dump(
     config = ensure_auth_config(api_base_url=env.api_base_url, repo=repo)
 
     inbox_emails = fetch_all_emails(env=env, config=config)
-    missing_emails = compute_missing_emails(
+    missing_email_output_files = compute_missing_emails(
         inbox_doc=inbox_doc, inbox_emails=inbox_emails, workdir_path=workdir_path
     )
 
@@ -394,7 +431,9 @@ def dump(
         resp: CreateInboxDumpRequestResponse = create_inbox_dump_request.sync(
             body=CreateInboxDumpRequest(
                 public_key=public_key,
-                email_ids=[inbox_email.id for inbox_email, _ in missing_emails],
+                email_ids=[
+                    inbox_email.id for inbox_email, _ in missing_email_output_files
+                ],
             ),
             username=config.username,
             repo_name=config.repo,
@@ -446,11 +485,19 @@ def dump(
 
         # delay import for testing purpose
         from ..encryption import decrypt_file
-        from ..file_io import extract_tar
 
         decrypt_file(
             input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
         )
-        # extract_tar(input_file=decrypted_file, logger=env.logger)
+        email_output_paths = {
+            inbox_email.id: output_path
+            for inbox_email, output_path in missing_email_output_files
+        }
+        extract_tar(
+            input_file=decrypted_file,
+            email_output_paths=email_output_paths,
+            workdir_path=workdir_path,
+            unsafe_tar_extract=unsafe_tar_extract,
+        )
 
     logger.info("done")
