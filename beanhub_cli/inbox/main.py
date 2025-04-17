@@ -99,20 +99,23 @@ def compute_missing_emails(
             output_file = (workdir / action.output_file).resolve().absolute()
             if not output_file.is_relative_to(workdir):
                 logger.error(
-                    "The email archive output path %s for email %s is not a sub-path of workdir %s",
+                    "The email archive output path [green]%s[/] for email [green]%s[/] is not a sub-path of workdir [green]%s[/]",
                     output_file,
                     inbox_email.id,
                     workdir,
+                    extra={"markup": True, "highlighter": None},
                 )
                 sys.exit(-1)
+            rel_output_file = output_file.relative_to(workdir)
             if output_file.exists():
                 logger.info(
-                    "The email archive output path %s for email %s already exists, skip",
-                    output_file,
+                    "The email [green]%s[/] archive output path [green]%s[/] already exists, skip",
                     inbox_email.id,
+                    rel_output_file,
+                    extra={"markup": True, "highlighter": None},
                 )
                 continue
-            yield inbox_email, output_file.relative_to(workdir)
+            yield inbox_email, rel_output_file
         else:
             raise ValueError(f"Unexpected action type {type(action)}")
 
@@ -135,7 +138,10 @@ def extract_tar(
                 sys.exit(-1)
             output_path.parent.mkdir(exist_ok=True, parents=True)
             logger.info(
-                "Writing email [green]%s[/] to [green]%s[/]", email_id, output_path
+                "Writing email [green]%s[/] to [green]%s[/]",
+                email_id,
+                output_path,
+                extra={"markup": True, "highlighter": None},
             )
             full_output_path = workdir_path / output_path
             has_data_filter = hasattr(tarfile, "data_filter")
@@ -419,8 +425,10 @@ def dump(
     config = ensure_auth_config(api_base_url=env.api_base_url, repo=repo)
 
     inbox_emails = fetch_all_emails(env=env, config=config)
-    missing_email_output_files = compute_missing_emails(
-        inbox_doc=inbox_doc, inbox_emails=inbox_emails, workdir_path=workdir_path
+    missing_email_output_files = list(
+        compute_missing_emails(
+            inbox_doc=inbox_doc, inbox_emails=inbox_emails, workdir_path=workdir_path
+        )
     )
 
     private_key = PrivateKey.generate()
