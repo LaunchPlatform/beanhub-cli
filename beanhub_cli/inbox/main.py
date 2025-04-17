@@ -440,6 +440,8 @@ def dump(
 
     with make_auth_client(base_url=env.api_base_url, token=config.token) as client:
         client.raise_on_unexpected_status = True
+        # TODO: it's a bit slow to download all the emails in one request if there are tons of emails.
+        #       maybe it makes more sense to break it down to smaller requests and stream line it?
         resp: CreateInboxDumpRequestResponse = create_inbox_dump_request.sync(
             body=CreateInboxDumpRequest(
                 public_key=public_key,
