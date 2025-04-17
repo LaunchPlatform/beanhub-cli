@@ -7,7 +7,11 @@ import tempfile
 import time
 
 import click
+import httpx
 import rich
+from nacl.encoding import URLSafeBase64Encoder
+from nacl.public import PrivateKey
+from nacl.public import SealedBox
 from rich import box
 from rich.markup import escape
 from rich.padding import Padding
@@ -19,8 +23,18 @@ from ..auth import ensure_auth_config
 from ..auth import make_auth_client
 from ..environment import Environment
 from ..environment import pass_env
-from ..utils import check_imports
-from ..utils import ExtraDepsSet
+from ..internal_api.api.connect import create_dump_request
+from ..internal_api.api.connect import create_sync_batch
+from ..internal_api.api.connect import get_dump_request
+from ..internal_api.api.connect import get_sync_batch
+from ..internal_api.models import CreateDumpRequestRequest
+from ..internal_api.models import CreateDumpRequestResponse
+from ..internal_api.models import CreateSyncBatchResponse
+from ..internal_api.models import DumpRequestState
+from ..internal_api.models import GetDumpRequestResponse
+from ..internal_api.models import GetSyncBatchResponse
+from ..internal_api.models import HTTPValidationError
+from ..internal_api.models import PlaidItemSyncState
 from .cli import cli
 
 logger = logging.getLogger(__name__)
@@ -31,13 +45,6 @@ SPOOLED_FILE_MAX_SIZE = 1024 * 1024 * 5
 
 
 def run_sync(env: Environment, config: AuthConfig):
-    from ..internal_api.api.connect import create_sync_batch
-    from ..internal_api.api.connect import get_sync_batch
-    from ..internal_api.models import CreateSyncBatchResponse
-    from ..internal_api.models import GetSyncBatchResponse
-    from ..internal_api.models import HTTPValidationError
-    from ..internal_api.models import PlaidItemSyncState
-
     GOOD_TERMINAL_SYNC_STATES = frozenset(
         [
             PlaidItemSyncState.IMPORT_COMPLETE,
@@ -147,7 +154,6 @@ def run_sync(env: Environment, config: AuthConfig):
     help='Which repository to run sync on, in "<username>/<repo_name>" format',
 )
 @pass_env
-@check_imports(ExtraDepsSet.LOGIN, logger)
 @handle_api_exception(logger)
 def sync(env: Environment, repo: str | None):
     config = ensure_auth_config(api_base_url=env.api_base_url, repo=repo)
@@ -183,7 +189,6 @@ def sync(env: Environment, repo: str | None):
     help="Allow unsafe tar extraction, mostly for Python < 3.11",
 )
 @pass_env
-@check_imports(ExtraDepsSet.CONNECT, logger)
 @handle_api_exception(logger)
 def dump(
     env: Environment,
@@ -192,17 +197,6 @@ def dump(
     output_accounts: str | None,
     unsafe_tar_extract: bool,
 ):
-    import httpx
-    from ..internal_api.api.connect import create_dump_request
-    from ..internal_api.api.connect import get_dump_request
-    from ..internal_api.models import CreateDumpRequestRequest
-    from ..internal_api.models import CreateDumpRequestResponse
-    from ..internal_api.models import DumpRequestState
-    from ..internal_api.models import GetDumpRequestResponse
-    from nacl.encoding import URLSafeBase64Encoder
-    from nacl.public import PrivateKey
-    from nacl.public import SealedBox
-
     if not hasattr(tarfile, "data_filter") and not unsafe_tar_extract:
         logger.error(
             "You need to use Python >= 3.11 in order to safely unpack the downloaded tar file, or you need to pass "
