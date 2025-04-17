@@ -4,6 +4,7 @@ import sys
 import typing
 
 from .config import load_config
+from .internal_api.client import AuthenticatedClient
 
 logger = logging.getLogger(__name__)
 
@@ -69,9 +70,7 @@ def ensure_auth_config(api_base_url: str, repo: str | None) -> AuthConfig:
     )
 
 
-def make_auth_client(base_url: str, token: str) -> "AuthenticatedClient":
-    from .internal_api.client import AuthenticatedClient
-
+def make_auth_client(base_url: str, token: str) -> AuthenticatedClient:
     return AuthenticatedClient(
         base_url=base_url, prefix="", auth_header_name="access-token", token=token
     )

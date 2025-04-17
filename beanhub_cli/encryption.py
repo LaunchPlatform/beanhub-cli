@@ -1,14 +1,14 @@
 import io
 
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.ciphers import algorithms
+from cryptography.hazmat.primitives.ciphers import Cipher
+from cryptography.hazmat.primitives.ciphers import modes
+
 
 def decrypt_file(
     input_file: io.BytesIO, output_file: io.BytesIO, iv: bytes, key: bytes
 ):
-    from cryptography.hazmat.primitives import padding
-    from cryptography.hazmat.primitives.ciphers import algorithms
-    from cryptography.hazmat.primitives.ciphers import Cipher
-    from cryptography.hazmat.primitives.ciphers import modes
-
     cipher = Cipher(algorithms.AES256(key), modes.CBC(iv))
     decryptor = cipher.decryptor()
     padder = padding.PKCS7(128).unpadder()
