@@ -8,6 +8,7 @@ import time
 import typing
 
 import click
+import httpx
 import yaml
 from beanhub_inbox.data_types import ArchiveInboxAction
 from beanhub_inbox.data_types import IgnoreInboxAction
@@ -28,6 +29,9 @@ from beanhub_inbox.processor import StartProcessingEmail
 from beanhub_inbox.processor import StartThinking
 from beanhub_inbox.processor import UpdateThinking
 from jinja2.sandbox import SandboxedEnvironment
+from nacl.encoding import URLSafeBase64Encoder
+from nacl.public import PrivateKey
+from nacl.public import SealedBox
 from rich.json import JSONHighlighter
 from rich.live import Live
 from rich.panel import Panel
@@ -39,9 +43,12 @@ from ..auth import make_auth_client
 from ..environment import Environment
 from ..environment import pass_env
 from ..internal_api.api.inbox import create_inbox_dump_request
+from ..internal_api.api.inbox import get_inbox_dump_request
 from ..internal_api.api.inbox import get_inbox_emails
 from ..internal_api.models import CreateInboxDumpRequest
 from ..internal_api.models import CreateInboxDumpRequestResponse
+from ..internal_api.models import DumpRequestState
+from ..internal_api.models import GetInboxDumpRequestResponse
 from ..internal_api.models import GetInboxEmailResponse
 from .cli import cli
 
@@ -62,7 +69,7 @@ def fetch_all_emails(
                 client=client,
                 cursor=current_cursor,
             )
-            if resp.cursor is None:
+            if not resp.cursor:
                 break
             for email in resp.emails:
                 yield InboxEmail(**email.to_dict())
@@ -73,14 +80,14 @@ def compute_missing_emails(
     inbox_doc: InboxDoc,
     inbox_emails: typing.Sequence[InboxEmail],
     workdir_path: pathlib.Path,
-):
+) -> typing.Generator[tuple[InboxEmail, pathlib.Path], None, None]:
     template_env = SandboxedEnvironment()
     workdir = workdir_path.resolve().absolute()
     for inbox_email in inbox_emails:
         action = process_inbox_email(
             template_env=template_env,
             email=inbox_email,
-            inbox_configs=inbox_doc.inbox_configs,
+            inbox_configs=inbox_doc.inbox,
         )
         if action is None:
             continue
@@ -310,6 +317,20 @@ def extract(
     help='Which repository to run dump on, in "<username>/<repo_name>" format',
 )
 @click.option(
+    "-c",
+    "--config",
+    type=click.Path(exists=True, dir_okay=False),
+    default=".beanhub/inbox.yaml",
+    help="The path to inbox config file",
+)
+@click.option(
+    "-w",
+    "--workdir",
+    type=click.Path(exists=True, dir_okay=True, file_okay=False),
+    default=str(pathlib.Path.cwd()),
+    help="The BeanHub project path to work on",
+)
+@click.option(
     "--unsafe-tar-extract",
     type=bool,
     is_flag=True,
@@ -320,16 +341,25 @@ def extract(
 def dump(
     env: Environment,
     repo: str | None,
+    config: str,
+    workdir: str,
     unsafe_tar_extract: bool,
 ):
-    import httpx
-    from ..internal_api.models import CreateDumpRequestRequest
-    from ..internal_api.models import CreateDumpRequestResponse
-    from ..internal_api.models import DumpRequestState
-    from ..internal_api.models import GetDumpRequestResponse
-    from nacl.encoding import URLSafeBase64Encoder
-    from nacl.public import PrivateKey
-    from nacl.public import SealedBox
+    config_path = pathlib.Path(config)
+    if config_path.exists():
+        with config_path.open("rt") as fo:
+            doc_payload = yaml.safe_load(fo)
+        inbox_doc = InboxDoc.model_validate(doc_payload)
+    else:
+        # TODO: load default
+        inbox_doc = None
+
+    workdir_path = pathlib.Path(workdir)
+    env.logger.info(
+        "Loaded import doc from [green]%s[/]",
+        config,
+        extra={"markup": True, "highlighter": None},
+    )
 
     if not hasattr(tarfile, "data_filter") and not unsafe_tar_extract:
         logger.error(
@@ -339,7 +369,10 @@ def dump(
         sys.exit(-1)
     config = ensure_auth_config(api_base_url=env.api_base_url, repo=repo)
 
-    # TODO: compare local files and the remote files to determine which emails to pull
+    inbox_emails = fetch_all_emails(env=env, config=config)
+    missing_emails = compute_missing_emails(
+        inbox_doc=inbox_doc, inbox_emails=inbox_emails, workdir_path=workdir_path
+    )
 
     private_key = PrivateKey.generate()
     public_key = private_key.public_key.encode(URLSafeBase64Encoder).decode("ascii")
@@ -349,7 +382,7 @@ def dump(
         resp: CreateInboxDumpRequestResponse = create_inbox_dump_request.sync(
             body=CreateInboxDumpRequest(
                 public_key=public_key,
-                email_ids=[],
+                email_ids=[inbox_email.id for inbox_email, _ in missing_emails],
             ),
             username=config.username,
             repo_name=config.repo,
@@ -365,7 +398,7 @@ def dump(
 
         while True:
             time.sleep(5)
-            resp: GetDumpRequestResponse = get_dump_request.sync(
+            resp: GetInboxDumpRequestResponse = get_inbox_dump_request.sync(
                 dump_request_id=dump_id,
                 username=config.username,
                 repo_name=config.repo,
@@ -405,6 +438,6 @@ def dump(
         decrypt_file(
             input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
         )
-        extract_tar(input_file=decrypted_file, logger=env.logger)
+        # extract_tar(input_file=decrypted_file, logger=env.logger)
 
     logger.info("done")
