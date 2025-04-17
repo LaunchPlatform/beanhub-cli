@@ -8,7 +8,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient
 from ...client import Client
-from ...models.create_inbox_dump_request_request import CreateInboxDumpRequestRequest
+from ...models.create_inbox_dump_request import CreateInboxDumpRequest
 from ...models.create_inbox_dump_request_response import CreateInboxDumpRequestResponse
 from ...models.http_validation_error import HTTPValidationError
 from ...types import Response
@@ -18,7 +18,7 @@ def _get_kwargs(
     username: str,
     repo_name: str,
     *,
-    body: CreateInboxDumpRequestRequest,
+    body: CreateInboxDumpRequest,
 ) -> dict[str, Any]:
     headers: dict[str, Any] = {}
 
@@ -69,14 +69,14 @@ def sync_detailed(
     repo_name: str,
     *,
     client: AuthenticatedClient,
-    body: CreateInboxDumpRequestRequest,
+    body: CreateInboxDumpRequest,
 ) -> Response[Union[CreateInboxDumpRequestResponse, HTTPValidationError]]:
     """Create an inbox dump request
 
     Args:
         username (str):
         repo_name (str):
-        body (CreateInboxDumpRequestRequest):
+        body (CreateInboxDumpRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -104,14 +104,14 @@ def sync(
     repo_name: str,
     *,
     client: AuthenticatedClient,
-    body: CreateInboxDumpRequestRequest,
+    body: CreateInboxDumpRequest,
 ) -> Optional[Union[CreateInboxDumpRequestResponse, HTTPValidationError]]:
     """Create an inbox dump request
 
     Args:
         username (str):
         repo_name (str):
-        body (CreateInboxDumpRequestRequest):
+        body (CreateInboxDumpRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -134,14 +134,14 @@ async def asyncio_detailed(
     repo_name: str,
     *,
     client: AuthenticatedClient,
-    body: CreateInboxDumpRequestRequest,
+    body: CreateInboxDumpRequest,
 ) -> Response[Union[CreateInboxDumpRequestResponse, HTTPValidationError]]:
     """Create an inbox dump request
 
     Args:
         username (str):
         repo_name (str):
-        body (CreateInboxDumpRequestRequest):
+        body (CreateInboxDumpRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -167,14 +167,14 @@ async def asyncio(
     repo_name: str,
     *,
     client: AuthenticatedClient,
-    body: CreateInboxDumpRequestRequest,
+    body: CreateInboxDumpRequest,
 ) -> Optional[Union[CreateInboxDumpRequestResponse, HTTPValidationError]]:
     """Create an inbox dump request
 
     Args:
         username (str):
         repo_name (str):
-        body (CreateInboxDumpRequestRequest):
+        body (CreateInboxDumpRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

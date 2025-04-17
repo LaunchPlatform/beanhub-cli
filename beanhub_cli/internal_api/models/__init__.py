@@ -5,7 +5,7 @@ from .auth_session_request import AuthSessionRequest
 from .auth_session_response import AuthSessionResponse
 from .create_dump_request_request import CreateDumpRequestRequest
 from .create_dump_request_response import CreateDumpRequestResponse
-from .create_inbox_dump_request_request import CreateInboxDumpRequestRequest
+from .create_inbox_dump_request import CreateInboxDumpRequest
 from .create_inbox_dump_request_response import CreateInboxDumpRequestResponse
 from .create_sync_batch_response import CreateSyncBatchResponse
 from .dump_request_state import DumpRequestState
@@ -20,7 +20,6 @@ from .inbox_email import InboxEmail
 from .inbox_email_headers import InboxEmailHeaders
 from .item_data import ItemData
 from .list_repositories_response import ListRepositoriesResponse
-from .pagination import Pagination
 from .plaid_item_sync_state import PlaidItemSyncState
 from .repository import Repository
 from .repository_type import RepositoryType
@@ -34,7 +33,7 @@ __all__ = (
     "AuthSessionResponse",
     "CreateDumpRequestRequest",
     "CreateDumpRequestResponse",
-    "CreateInboxDumpRequestRequest",
+    "CreateInboxDumpRequest",
     "CreateInboxDumpRequestResponse",
     "CreateSyncBatchResponse",
     "DumpRequestState",
@@ -49,7 +48,6 @@ __all__ = (
     "InboxEmailHeaders",
     "ItemData",
     "ListRepositoriesResponse",
-    "Pagination",
     "PlaidItemSyncState",
     "Repository",
     "RepositoryType",

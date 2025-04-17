@@ -111,7 +111,7 @@ def main(
     env.logger.info("Skipped %s transactions", len(unprocessed_txns))
 
     beanfile_path = (workdir_path / pathlib.Path(beanfile)).resolve()
-    if workdir_path.resolve().absolute() not in beanfile_path.absolute().parents:
+    if not beanfile_path.is_relative_to(workdir_path.resolve()):
         env.logger.error(
             "The provided beanfile path %s is not a sub-path of workdir %s",
             beanfile_path,

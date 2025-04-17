@@ -1,13 +1,17 @@
 from typing import Any
+from typing import cast
 from typing import TYPE_CHECKING
 from typing import TypeVar
+from typing import Union
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
+from ..types import UNSET
+from ..types import Unset
+
 if TYPE_CHECKING:
     from ..models.inbox_email import InboxEmail
-    from ..models.pagination import Pagination
 
 
 T = TypeVar("T", bound="GetInboxEmailResponse")
@@ -18,11 +22,11 @@ class GetInboxEmailResponse:
     """
     Attributes:
         emails (list['InboxEmail']):
-        pagination (Pagination):
+        cursor (Union[None, Unset, str]):
     """
 
     emails: list["InboxEmail"]
-    pagination: "Pagination"
+    cursor: Union[None, Unset, str] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -31,23 +35,27 @@ class GetInboxEmailResponse:
             emails_item = emails_item_data.to_dict()
             emails.append(emails_item)
 
-        pagination = self.pagination.to_dict()
+        cursor: Union[None, Unset, str]
+        if isinstance(self.cursor, Unset):
+            cursor = UNSET
+        else:
+            cursor = self.cursor
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
                 "emails": emails,
-                "pagination": pagination,
             }
         )
+        if cursor is not UNSET:
+            field_dict["cursor"] = cursor
 
         return field_dict
 
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         from ..models.inbox_email import InboxEmail
-        from ..models.pagination import Pagination
 
         d = src_dict.copy()
         emails = []
@@ -57,11 +65,18 @@ class GetInboxEmailResponse:
 
             emails.append(emails_item)
 
-        pagination = Pagination.from_dict(d.pop("pagination"))
+        def _parse_cursor(data: object) -> Union[None, Unset, str]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, str], data)
+
+        cursor = _parse_cursor(d.pop("cursor", UNSET))
 
         get_inbox_email_response = cls(
             emails=emails,
-            pagination=pagination,
+            cursor=cursor,
         )
 
         get_inbox_email_response.additional_properties = d

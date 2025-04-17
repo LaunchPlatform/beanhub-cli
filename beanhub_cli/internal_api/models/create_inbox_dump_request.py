@@ -1,45 +1,36 @@
 from typing import Any
+from typing import cast
 from typing import TypeVar
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-T = TypeVar("T", bound="Pagination")
+T = TypeVar("T", bound="CreateInboxDumpRequest")
 
 
 @_attrs_define
-class Pagination:
+class CreateInboxDumpRequest:
     """
     Attributes:
-        total_items (int):
-        total_pages (int):
-        page (int):
-        limit (int):
+        public_key (str):
+        email_ids (list[str]):
     """
 
-    total_items: int
-    total_pages: int
-    page: int
-    limit: int
+    public_key: str
+    email_ids: list[str]
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        total_items = self.total_items
+        public_key = self.public_key
 
-        total_pages = self.total_pages
-
-        page = self.page
-
-        limit = self.limit
+        email_ids = self.email_ids
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "total_items": total_items,
-                "total_pages": total_pages,
-                "page": page,
-                "limit": limit,
+                "public_key": public_key,
+                "email_ids": email_ids,
             }
         )
 
@@ -48,23 +39,17 @@ class Pagination:
     @classmethod
     def from_dict(cls: type[T], src_dict: dict[str, Any]) -> T:
         d = src_dict.copy()
-        total_items = d.pop("total_items")
+        public_key = d.pop("public_key")
 
-        total_pages = d.pop("total_pages")
+        email_ids = cast(list[str], d.pop("email_ids"))
 
-        page = d.pop("page")
-
-        limit = d.pop("limit")
-
-        pagination = cls(
-            total_items=total_items,
-            total_pages=total_pages,
-            page=page,
-            limit=limit,
+        create_inbox_dump_request = cls(
+            public_key=public_key,
+            email_ids=email_ids,
         )
 
-        pagination.additional_properties = d
-        return pagination
+        create_inbox_dump_request.additional_properties = d
+        return create_inbox_dump_request
 
     @property
     def additional_keys(self) -> list[str]:

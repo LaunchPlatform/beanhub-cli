@@ -1,4 +1,3 @@
-import contextlib
 import json
 import logging
 import pathlib
@@ -6,22 +5,29 @@ import sys
 import tarfile
 import tempfile
 import time
+import typing
 
 import click
 import yaml
+from beanhub_inbox.data_types import ArchiveInboxAction
+from beanhub_inbox.data_types import IgnoreInboxAction
 from beanhub_inbox.data_types import InboxDoc
+from beanhub_inbox.data_types import InboxEmail
 from beanhub_inbox.processor import CSVRowExists
 from beanhub_inbox.processor import FinishExtractingColumn
 from beanhub_inbox.processor import FinishExtractingRow
 from beanhub_inbox.processor import FinishThinking
 from beanhub_inbox.processor import IgnoreEmail
+from beanhub_inbox.processor import InboxEmail
 from beanhub_inbox.processor import MatchImportRule
 from beanhub_inbox.processor import NoMatch
 from beanhub_inbox.processor import process_imports
+from beanhub_inbox.processor import process_inbox_email
 from beanhub_inbox.processor import StartExtractingColumn
 from beanhub_inbox.processor import StartProcessingEmail
 from beanhub_inbox.processor import StartThinking
 from beanhub_inbox.processor import UpdateThinking
+from jinja2.sandbox import SandboxedEnvironment
 from rich.json import JSONHighlighter
 from rich.live import Live
 from rich.panel import Panel
@@ -32,23 +38,74 @@ from ..auth import ensure_auth_config
 from ..auth import make_auth_client
 from ..environment import Environment
 from ..environment import pass_env
+from ..internal_api.api.inbox import create_inbox_dump_request
+from ..internal_api.api.inbox import get_inbox_emails
+from ..internal_api.models import CreateInboxDumpRequest
+from ..internal_api.models import CreateInboxDumpRequestResponse
+from ..internal_api.models import GetInboxEmailResponse
 from .cli import cli
 
 logger = logging.getLogger(__name__)
 SPOOLED_FILE_MAX_SIZE = 1024 * 1024 * 5
 
 
-@contextlib.contextmanager
-def report_think_progress():
-    with Live(transient=True) as live:
-        think_log = ""
+def fetch_all_emails(
+    env: Environment, config: AuthConfig
+) -> typing.Generator[InboxEmail, None, None]:
+    with make_auth_client(base_url=env.api_base_url, token=config.token) as client:
+        client.raise_on_unexpected_status = True
+        current_cursor = None
+        while True:
+            resp: GetInboxEmailResponse = get_inbox_emails.sync(
+                username=config.username,
+                repo_name=config.repo,
+                client=client,
+                cursor=current_cursor,
+            )
+            if resp.cursor is None:
+                break
+            for email in resp.emails:
+                yield InboxEmail(**email.to_dict())
+            current_cursor = resp.cursor
 
-        def update(data: str):
-            nonlocal think_log
-            think_log += data
-            live.update(Panel(think_log, title="Thinking ..."))
 
-        yield update
+def compute_missing_emails(
+    inbox_doc: InboxDoc,
+    inbox_emails: typing.Sequence[InboxEmail],
+    workdir_path: pathlib.Path,
+):
+    template_env = SandboxedEnvironment()
+    workdir = workdir_path.resolve().absolute()
+    for inbox_email in inbox_emails:
+        action = process_inbox_email(
+            template_env=template_env,
+            email=inbox_email,
+            inbox_configs=inbox_doc.inbox_configs,
+        )
+        if action is None:
+            continue
+        if isinstance(action, IgnoreInboxAction):
+            continue
+        elif isinstance(action, ArchiveInboxAction):
+            output_file = (workdir / action.output_file).resolve().absolute()
+            if not output_file.is_relative_to(workdir):
+                logger.error(
+                    "The email archive output path %s for email %s is not a sub-path of workdir %s",
+                    output_file,
+                    inbox_email.id,
+                    workdir,
+                )
+                sys.exit(-1)
+            if output_file.exists():
+                logger.info(
+                    "The email archive output path %s for email %s already exists, skip",
+                    output_file,
+                    inbox_email.id,
+                )
+                continue
+            yield inbox_email, output_file
+        else:
+            raise ValueError(f"Unexpected action type {type(action)}")
 
 
 @cli.command(
@@ -142,7 +199,6 @@ def extract(
         input_dir=workdir_path,
         llm_model=model,
         progress_output_folder=progress_output_folder,
-        think_progress_factory=report_think_progress,
     )
     for event in process_event_generators:
         if isinstance(event, StartProcessingEmail):
@@ -267,8 +323,6 @@ def dump(
     unsafe_tar_extract: bool,
 ):
     import httpx
-    from ..internal_api.api.connect import create_dump_request
-    from ..internal_api.api.connect import get_dump_request
     from ..internal_api.models import CreateDumpRequestRequest
     from ..internal_api.models import CreateDumpRequestResponse
     from ..internal_api.models import DumpRequestState
@@ -292,9 +346,10 @@ def dump(
 
     with make_auth_client(base_url=env.api_base_url, token=config.token) as client:
         client.raise_on_unexpected_status = True
-        resp: CreateDumpRequestResponse = create_dump_request.sync(
-            body=CreateDumpRequestRequest(
-                public_key=public_key, output_accounts=output_accounts is not None
+        resp: CreateInboxDumpRequestResponse = create_inbox_dump_request.sync(
+            body=CreateInboxDumpRequest(
+                public_key=public_key,
+                email_ids=[],
             ),
             username=config.username,
             repo_name=config.repo,

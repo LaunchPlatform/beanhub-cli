@@ -19,14 +19,16 @@ def _get_kwargs(
     username: str,
     repo_name: str,
     *,
-    page: Union[Unset, int] = 0,
-    limit: Union[Unset, int] = 50,
+    cursor: Union[None, Unset, str] = UNSET,
 ) -> dict[str, Any]:
     params: dict[str, Any] = {}
 
-    params["page"] = page
-
-    params["limit"] = limit
+    json_cursor: Union[None, Unset, str]
+    if isinstance(cursor, Unset):
+        json_cursor = UNSET
+    else:
+        json_cursor = cursor
+    params["cursor"] = json_cursor
 
     params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
@@ -72,16 +74,14 @@ def sync_detailed(
     repo_name: str,
     *,
     client: AuthenticatedClient,
-    page: Union[Unset, int] = 0,
-    limit: Union[Unset, int] = 50,
+    cursor: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[GetInboxEmailResponse, HTTPValidationError]]:
     """Get inbox emails
 
     Args:
         username (str):
         repo_name (str):
-        page (Union[Unset, int]): Current page Default: 0.
-        limit (Union[Unset, int]): Limit of item number in the page Default: 50.
+        cursor (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -94,8 +94,7 @@ def sync_detailed(
     kwargs = _get_kwargs(
         username=username,
         repo_name=repo_name,
-        page=page,
-        limit=limit,
+        cursor=cursor,
     )
 
     response = client.get_httpx_client().request(
@@ -110,16 +109,14 @@ def sync(
     repo_name: str,
     *,
     client: AuthenticatedClient,
-    page: Union[Unset, int] = 0,
-    limit: Union[Unset, int] = 50,
+    cursor: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[GetInboxEmailResponse, HTTPValidationError]]:
     """Get inbox emails
 
     Args:
         username (str):
         repo_name (str):
-        page (Union[Unset, int]): Current page Default: 0.
-        limit (Union[Unset, int]): Limit of item number in the page Default: 50.
+        cursor (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -133,8 +130,7 @@ def sync(
         username=username,
         repo_name=repo_name,
         client=client,
-        page=page,
-        limit=limit,
+        cursor=cursor,
     ).parsed
 
 
@@ -143,16 +139,14 @@ async def asyncio_detailed(
     repo_name: str,
     *,
     client: AuthenticatedClient,
-    page: Union[Unset, int] = 0,
-    limit: Union[Unset, int] = 50,
+    cursor: Union[None, Unset, str] = UNSET,
 ) -> Response[Union[GetInboxEmailResponse, HTTPValidationError]]:
     """Get inbox emails
 
     Args:
         username (str):
         repo_name (str):
-        page (Union[Unset, int]): Current page Default: 0.
-        limit (Union[Unset, int]): Limit of item number in the page Default: 50.
+        cursor (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -165,8 +159,7 @@ async def asyncio_detailed(
     kwargs = _get_kwargs(
         username=username,
         repo_name=repo_name,
-        page=page,
-        limit=limit,
+        cursor=cursor,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -179,16 +172,14 @@ async def asyncio(
     repo_name: str,
     *,
     client: AuthenticatedClient,
-    page: Union[Unset, int] = 0,
-    limit: Union[Unset, int] = 50,
+    cursor: Union[None, Unset, str] = UNSET,
 ) -> Optional[Union[GetInboxEmailResponse, HTTPValidationError]]:
     """Get inbox emails
 
     Args:
         username (str):
         repo_name (str):
-        page (Union[Unset, int]): Current page Default: 0.
-        limit (Union[Unset, int]): Limit of item number in the page Default: 50.
+        cursor (Union[None, Unset, str]):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -203,7 +194,6 @@ async def asyncio(
             username=username,
             repo_name=repo_name,
             client=client,
-            page=page,
-            limit=limit,
+            cursor=cursor,
         )
     ).parsed
