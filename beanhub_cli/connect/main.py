@@ -162,7 +162,7 @@ def sync(env: Environment, repo: str | None):
     "-r",
     "--repo",
     type=str,
-    help='Which repository to run sync on, in "<username>/<repo_name>" format',
+    help='Which repository to run dump on, in "<username>/<repo_name>" format',
 )
 @click.option(
     "-s",
