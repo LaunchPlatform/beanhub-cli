@@ -151,9 +151,10 @@ def extract_tar(
                     "in --unsafe-tar-extract argument to allow unsafe tar file extracting"
                 )
                 sys.exit(-1)
+            member.name = output_path.name
             tar_file.extract(
                 member,
-                full_output_path,
+                full_output_path.parent,
                 set_attrs=False,
                 filter="data" if has_data_filter else None,
             )
