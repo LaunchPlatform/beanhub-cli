@@ -11,30 +11,26 @@ jobs:
       - image: cimg/python:3.10.14
     steps:
       - checkout
-      - python/install-packages:
-          pkg-manager: poetry
-          args: --all-extras
+      - run:
+          name: Install uv
+          command: pip install uv
       - run:
           name: Run test
-          command: poetry run python -m pytest ./tests -svvvv
+          command: uv run python -m pytest ./tests -svvvv
   build-and-publish:
     docker:
       - image: cimg/python:3.10.14
     steps:
       - checkout
-      - python/install-packages:
-          pkg-manager: poetry
-          args: --all-extras
       - run:
-          name: config
-          command: |
-            poetry config http-basic.pypi "__token__" "${POETRY_PYPI_TOKEN_PYPI}"
+          name: Install uv
+          command: pip install uv
       - run:
           name: Build
-          command: poetry build
+          command: uv build
       - run:
           name: Publish
-          command: poetry publish
+          command: uv publish
 
 workflows:
   build-and-publish:
