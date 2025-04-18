@@ -11,9 +11,14 @@ import click
 import httpx
 import yaml
 from beanhub_inbox.data_types import ArchiveInboxAction
+from beanhub_inbox.data_types import ExtractConfig
+from beanhub_inbox.data_types import ExtractImportAction
 from beanhub_inbox.data_types import IgnoreInboxAction
+from beanhub_inbox.data_types import ImportConfig
+from beanhub_inbox.data_types import InboxConfig
 from beanhub_inbox.data_types import InboxDoc
 from beanhub_inbox.data_types import InboxEmail
+from beanhub_inbox.data_types import InputConfig
 from beanhub_inbox.processor import CSVRowExists
 from beanhub_inbox.processor import FinishExtractingColumn
 from beanhub_inbox.processor import FinishExtractingRow
@@ -54,6 +59,26 @@ from .cli import cli
 logger = logging.getLogger(__name__)
 SPOOLED_FILE_MAX_SIZE = 1024 * 1024 * 5
 DEFAULT_INBOX_CONFIG_FILE = ".beanhub/inbox.yaml"
+DEFAULT_INBOX_RULES = [
+    InboxConfig(
+        action=ArchiveInboxAction(output_file="inbox-data/default/{{ id }}.eml")
+    )
+]
+DEFAULT_INPUT_RULES = [InputConfig(match="inbox-data/default/*.eml")]
+DEFAULT_IMPORT_RULES = [
+    ImportConfig(
+        actions=[
+            ExtractImportAction(
+                extract=ExtractConfig(output_csv="import-data/inbox/default.csv")
+            )
+        ]
+    )
+]
+DEFAULT_INBOX_DOC = InboxDoc(
+    inbox=DEFAULT_INBOX_RULES,
+    inputs=DEFAULT_INPUT_RULES,
+    imports=DEFAULT_IMPORT_RULES,
+)
 
 
 def fetch_all_emails(
@@ -124,7 +149,7 @@ def compute_missing_emails(
 @click.option(
     "-c",
     "--config",
-    type=click.Path(exists=True, dir_okay=False),
+    type=click.Path(dir_okay=False),
     default=".beanhub/inbox.yaml",
     help="The path to inbox config file",
 )
@@ -168,15 +193,17 @@ def extract(
     if config_path.exists():
         doc_payload = yaml.safe_load(config_path.read_bytes())
         inbox_doc = InboxDoc.model_validate(doc_payload)
-        env.logger.info(
+        if inbox_doc.inbox is None:
+            inbox_doc.inbox = DEFAULT_INBOX_RULES
+            logger.info("Use default inbox rules")
+        logger.info(
             "Loaded inbox doc from [green]%s[/]",
             config,
             extra={"markup": True, "highlighter": None},
         )
     else:
-        # TODO: use default
-        inbox_doc = None
-        env.logger.info(
+        inbox_doc = DEFAULT_INBOX_DOC
+        logger.info(
             "The inbox doc at [green]%s[/] does not exist, use default config",
             config,
             extra={"markup": True, "highlighter": None},
