@@ -46,7 +46,7 @@ TABLE_COLUMN_STYLE = "cyan"
     "--workdir",
     type=click.Path(exists=True, dir_okay=True, file_okay=False),
     default=str(pathlib.Path.cwd()),
-    help="The beanhub project path to work on",
+    help="The BeanHub project path to work on",
 )
 @click.option(
     "-b",
@@ -111,7 +111,7 @@ def main(
     env.logger.info("Skipped %s transactions", len(unprocessed_txns))
 
     beanfile_path = (workdir_path / pathlib.Path(beanfile)).resolve()
-    if workdir_path.resolve().absolute() not in beanfile_path.absolute().parents:
+    if not beanfile_path.is_relative_to(workdir_path.resolve()):
         env.logger.error(
             "The provided beanfile path %s is not a sub-path of workdir %s",
             beanfile_path,

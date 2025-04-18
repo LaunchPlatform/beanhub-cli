@@ -29,8 +29,8 @@ def test_dump(
     mocker: MockFixture,
     output_accounts: bool,
 ):
-    mock_decrypt_file = mocker.patch("beanhub_cli.connect.encryption.decrypt_file")
-    mock_extract_tar = mocker.patch("beanhub_cli.connect.file_io.extract_tar")
+    mock_decrypt_file = mocker.patch("beanhub_cli.encryption.decrypt_file")
+    mock_extract_tar = mocker.patch("beanhub_cli.file_io.extract_tar")
 
     dump_id = uuid.uuid4()
     public_key = mock_private_key.public_key.encode(URLSafeBase64Encoder).decode(

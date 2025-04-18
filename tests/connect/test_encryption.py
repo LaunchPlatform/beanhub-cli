@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives.ciphers import algorithms
 from cryptography.hazmat.primitives.ciphers import Cipher
 from cryptography.hazmat.primitives.ciphers import modes
 
-from beanhub_cli.connect.encryption import decrypt_file
+from beanhub_cli.encryption import decrypt_file
 
 SPOOLED_FILE_MAX_SIZE = 1024 * 1024 * 5
 

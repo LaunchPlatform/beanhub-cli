@@ -7,21 +7,35 @@ import tempfile
 import time
 
 import click
+import httpx
 import rich
+from nacl.encoding import URLSafeBase64Encoder
+from nacl.public import PrivateKey
+from nacl.public import SealedBox
 from rich import box
 from rich.markup import escape
 from rich.padding import Padding
 from rich.table import Table
 
 from ..api_helpers import handle_api_exception
-from ..api_helpers import make_auth_client
+from ..auth import AuthConfig
+from ..auth import ensure_auth_config
+from ..auth import make_auth_client
 from ..environment import Environment
 from ..environment import pass_env
-from ..utils import check_imports
-from ..utils import ExtraDepsSet
+from ..internal_api.api.connect import create_dump_request
+from ..internal_api.api.connect import create_sync_batch
+from ..internal_api.api.connect import get_dump_request
+from ..internal_api.api.connect import get_sync_batch
+from ..internal_api.models import CreateDumpRequestRequest
+from ..internal_api.models import CreateDumpRequestResponse
+from ..internal_api.models import CreateSyncBatchResponse
+from ..internal_api.models import DumpRequestState
+from ..internal_api.models import GetDumpRequestResponse
+from ..internal_api.models import GetSyncBatchResponse
+from ..internal_api.models import HTTPValidationError
+from ..internal_api.models import PlaidItemSyncState
 from .cli import cli
-from .config import ConnectConfig
-from .config import ensure_config
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +44,7 @@ TABLE_COLUMN_STYLE = "cyan"
 SPOOLED_FILE_MAX_SIZE = 1024 * 1024 * 5
 
 
-def run_sync(env: Environment, config: ConnectConfig):
-    from ..internal_api.api.connect import create_sync_batch
-    from ..internal_api.api.connect import get_sync_batch
-    from ..internal_api.models import CreateSyncBatchResponse
-    from ..internal_api.models import GetSyncBatchResponse
-    from ..internal_api.models import HTTPValidationError
-    from ..internal_api.models import PlaidItemSyncState
-
+def run_sync(env: Environment, config: AuthConfig):
     GOOD_TERMINAL_SYNC_STATES = frozenset(
         [
             PlaidItemSyncState.IMPORT_COMPLETE,
@@ -147,10 +154,9 @@ def run_sync(env: Environment, config: ConnectConfig):
     help='Which repository to run sync on, in "<username>/<repo_name>" format',
 )
 @pass_env
-@check_imports(ExtraDepsSet.LOGIN, logger)
 @handle_api_exception(logger)
 def sync(env: Environment, repo: str | None):
-    config = ensure_config(api_base_url=env.api_base_url, repo=repo)
+    config = ensure_auth_config(api_base_url=env.api_base_url, repo=repo)
     run_sync(env, config)
     env.logger.info("done")
 
@@ -162,7 +168,7 @@ def sync(env: Environment, repo: str | None):
     "-r",
     "--repo",
     type=str,
-    help='Which repository to run sync on, in "<username>/<repo_name>" format',
+    help='Which repository to run dump on, in "<username>/<repo_name>" format',
 )
 @click.option(
     "-s",
@@ -183,7 +189,6 @@ def sync(env: Environment, repo: str | None):
     help="Allow unsafe tar extraction, mostly for Python < 3.11",
 )
 @pass_env
-@check_imports(ExtraDepsSet.CONNECT, logger)
 @handle_api_exception(logger)
 def dump(
     env: Environment,
@@ -192,24 +197,13 @@ def dump(
     output_accounts: str | None,
     unsafe_tar_extract: bool,
 ):
-    import httpx
-    from ..internal_api.api.connect import create_dump_request
-    from ..internal_api.api.connect import get_dump_request
-    from ..internal_api.models import CreateDumpRequestRequest
-    from ..internal_api.models import CreateDumpRequestResponse
-    from ..internal_api.models import DumpRequestState
-    from ..internal_api.models import GetDumpRequestResponse
-    from nacl.encoding import URLSafeBase64Encoder
-    from nacl.public import PrivateKey
-    from nacl.public import SealedBox
-
     if not hasattr(tarfile, "data_filter") and not unsafe_tar_extract:
         logger.error(
             "You need to use Python >= 3.11 in order to safely unpack the downloaded tar file, or you need to pass "
             "in --unsafe-tar-extract argument to allow unsafe tar file extracting"
         )
         sys.exit(-1)
-    config = ensure_config(api_base_url=env.api_base_url, repo=repo)
+    config = ensure_auth_config(api_base_url=env.api_base_url, repo=repo)
     if sync:
         run_sync(env, config)
 
@@ -270,8 +264,8 @@ def dump(
         logger.info("Decrypting downloaded file ...")
 
         # delay import for testing purpose
-        from .encryption import decrypt_file
-        from .file_io import extract_tar
+        from ..encryption import decrypt_file
+        from ..file_io import extract_tar
 
         decrypt_file(
             input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
@@ -298,8 +292,8 @@ def dump(
             )
 
             # delay import for testing purpose
-            from .encryption import decrypt_file
-            from .file_io import extract_tar
+            from ..encryption import decrypt_file
+            from ..file_io import extract_tar
 
             decrypt_file(
                 input_file=encrypted_file, output_file=decrypted_file, key=key, iv=iv
