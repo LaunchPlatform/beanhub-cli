@@ -207,10 +207,6 @@ def extract(
 ):
     config_path = pathlib.Path(config)
     workdir_path = pathlib.Path(workdir)
-    debug_output_path = None
-    if debug_output_folder is not None:
-        debug_output_path = pathlib.Path(debug_output_folder)
-        debug_output_path.mkdir(parents=True, exist_ok=True)
     if config_path.exists():
         doc_payload = yaml.safe_load(config_path.read_bytes())
         inbox_doc = InboxDoc.model_validate(doc_payload)
@@ -233,12 +229,13 @@ def extract(
         model,
         extra={"markup": True, "highlighter": None},
     )
-    progress_output_folder = None
-    if debug_output_folder:
-        progress_output_folder = pathlib.Path(debug_output_folder)
+    debug_output_path = None
+    if debug_output_folder is not None:
+        debug_output_path = pathlib.Path(debug_output_folder)
+        debug_output_path.mkdir(parents=True, exist_ok=True)
         env.logger.info(
             "Writing debugging files to [magenta]%s[/] folder",
-            progress_output_folder,
+            debug_output_path,
             extra={"markup": True, "highlighter": None},
         )
 
@@ -250,7 +247,7 @@ def extract(
         inbox_doc=inbox_doc,
         input_dir=workdir_path,
         llm_model=model,
-        progress_output_folder=progress_output_folder,
+        workdir_path=workdir_path,
     )
     for event in process_event_generators:
         if isinstance(event, StartProcessingEmail):
@@ -282,9 +279,10 @@ def extract(
             )
         elif isinstance(event, CSVRowExists):
             logger.info(
-                "Skip processing email [green]%s[/] as it exists in the output CSV file [green]%s[/] already",
+                "Skip processing email [green]%s[/] as it exists in the output CSV file at [green]%s[/]:[blue]%s[/] already",
                 event.email_file.id,
-                event.email_file.filepath,
+                event.output_csv,
+                event.lineno,
                 extra={"markup": True, "highlighter": None},
             )
         elif isinstance(event, StartExtractingColumn):

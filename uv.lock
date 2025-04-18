@@ -150,7 +150,7 @@ requires-dist = [
     { name = "beanhub-extract", specifier = ">=0.1.0,<1.0.0" },
     { name = "beanhub-forms", specifier = ">=0.1.3,<0.2" },
     { name = "beanhub-import", specifier = ">=1.0.0,<2.0.0" },
-    { name = "beanhub-inbox", editable = "../beanhub-inbox" },
+    { name = "beanhub-inbox", specifier = ">=0.2.1,<0.3.0" },
     { name = "click", specifier = ">=8.1.7,<9" },
     { name = "cryptography", specifier = ">=44.0.0,<45" },
     { name = "fastapi", specifier = ">=0.98.0,<1.0.0" },
@@ -227,35 +227,20 @@ wheels = [
 
 [[package]]
 name = "beanhub-inbox"
-version = "0.1.2"
-source = { editable = "../beanhub-inbox" }
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "email-validator" },
-    { name = "fast-mail-parser" },
     { name = "jinja2" },
     { name = "lxml" },
     { name = "ollama" },
     { name = "pydantic" },
+    { name = "pytest-mock" },
     { name = "pyyaml" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "email-validator", specifier = ">=2.2.0" },
-    { name = "fast-mail-parser", specifier = ">=0.2.5" },
-    { name = "jinja2", specifier = ">=3.1.6" },
-    { name = "lxml", specifier = ">=5.3.2" },
-    { name = "ollama", specifier = ">=0.4.7" },
-    { name = "pydantic", specifier = ">=2.11.2" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "factory-boy", specifier = ">=3.3.3" },
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "pytest-dotenv", specifier = ">=0.5.2" },
-    { name = "pytest-factoryboy", specifier = ">=2.7.0" },
+sdist = { url = "https://files.pythonhosted.org/packages/d3/5f/da251998dab8f74137eb387048012cfaac7321be05ddb4c6c63f9c3b459f/beanhub_inbox-0.2.1.tar.gz", hash = "sha256:31378bb2146fbf2c4438192785a871e7a6a6a54ce1c14e240ed2ca573a7e3cd9", size = 15157 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4c/82/b0edf57e8de1003c280935439697164ec8027077431cff7b7d386bc85168/beanhub_inbox-0.2.1-py3-none-any.whl", hash = "sha256:c6612958a0c109531a99a6f5d50f895cf2b29a2964704f500414f7178ff9e0e5", size = 10996 },
 ]
 
 [[package]]
@@ -472,17 +457,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/09/35/2495c4ac46b980e4ca1f6ad6db102322ef3ad2410b79fdde159a4b0f3b92/exceptiongroup-1.2.2.tar.gz", hash = "sha256:47c2edf7c6738fafb49fd34290706d1a1a2f4d1c6df275526b62cbb4aa5393cc", size = 28883 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/02/cc/b7e31358aac6ed1ef2bb790a9746ac2c69bcb3c8588b41616914eb106eaf/exceptiongroup-1.2.2-py3-none-any.whl", hash = "sha256:3111b9d131c238bec2f8f516e123e14ba243563fb135d3fe885990585aa7795b", size = 16453 },
-]
-
-[[package]]
-name = "fast-mail-parser"
-version = "0.2.5"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/dd/b1/af43ef34a7c2560d38ec7949b190744025d3c5f2c4d3e8c657185563e1e3/fast_mail_parser-0.2.5.tar.gz", hash = "sha256:d4959d09e598e52885bed2b07ae8eeb148b89943ca4d220c11a6dc1ec5d84633", size = 413825 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9a/21/5ec716bc9a7247cf904dc77bd2f8c8264a5e1fa702ad64ad8299cbbccb10/fast_mail_parser-0.2.5-cp310-cp310-macosx_10_7_x86_64.whl", hash = "sha256:c315ec5cab222b8fe139643b5e69c4b10605b7beb6048eb70746427ee63e7bbb", size = 382377 },
-    { url = "https://files.pythonhosted.org/packages/8b/ad/15d5af8197fd9a4443bf2b2d15b67e97a1bcfef9d3a666ed55285ce3a028/fast_mail_parser-0.2.5-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:b29dae0fdbbb54300e15367a3789a180d6f98d64d772719b3c1df8f887be3514", size = 427561 },
-    { url = "https://files.pythonhosted.org/packages/c9/ec/c957f009f10bbe938d880166f01359f8c3d8c9c447020dcbc2f33b8a05ab/fast_mail_parser-0.2.5-cp310-none-win_amd64.whl", hash = "sha256:c6f1b80d53cad02c69c22de45ffc8a09b3e265d145aa0dfe2630d60fd4840807", size = 337933 },
 ]
 
 [[package]]
@@ -855,15 +829,15 @@ wheels = [
 
 [[package]]
 name = "ollama"
-version = "0.4.7"
+version = "0.4.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b0/6d/dc77539c735bbed5d0c873fb029fb86aa9f0163df169b34152914331c369/ollama-0.4.7.tar.gz", hash = "sha256:891dcbe54f55397d82d289c459de0ea897e103b86a3f1fad0fdb1895922a75ff", size = 12843 }
+sdist = { url = "https://files.pythonhosted.org/packages/e2/64/709dc99030f8f46ec552f0a7da73bbdcc2da58666abfec4742ccdb2e800e/ollama-0.4.8.tar.gz", hash = "sha256:1121439d49b96fa8339842965d0616eba5deb9f8c790786cdf4c0b3df4833802", size = 12972 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/83/c3ffac86906c10184c88c2e916460806b072a2cfe34cdcaf3a0c0e836d39/ollama-0.4.7-py3-none-any.whl", hash = "sha256:85505663cca67a83707be5fb3aeff0ea72e67846cea5985529d8eca4366564a1", size = 13210 },
+    { url = "https://files.pythonhosted.org/packages/33/3f/164de150e983b3a16e8bf3d4355625e51a357e7b3b1deebe9cc1f7cb9af8/ollama-0.4.8-py3-none-any.whl", hash = "sha256:04312af2c5e72449aaebac4a2776f52ef010877c554103419d3f36066fe8af4c", size = 13325 },
 ]
 
 [[package]]
