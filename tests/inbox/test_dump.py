@@ -48,10 +48,15 @@ def mock_private_key(mocker: MockFixture) -> PrivateKey:
             ),
             [
                 InboxEmailFactory(id="email0"),
+                InboxEmailFactory(id="email1"),
+                InboxEmailFactory(id="email2"),
             ],
-            [],
+            [
+                "inbox-data/default/email1.eml",
+            ],
             [
                 ("email0", "inbox-data/default/email0.eml"),
+                ("email2", "inbox-data/default/email2.eml"),
             ],
         ),
     ],
@@ -65,6 +70,7 @@ def test_compute_missing_emails(
 ):
     for existing_file in existing_files:
         existing_file_path = tmp_path / existing_file
+        existing_file_path.parent.mkdir(parents=True, exist_ok=True)
         existing_file_path.write_text("")
     assert (
         list(
