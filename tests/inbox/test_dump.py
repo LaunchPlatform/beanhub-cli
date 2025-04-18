@@ -14,10 +14,11 @@ from nacl.public import SealedBox
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockFixture
 
+from ..factories import InboxEmailFactory
+from ..helper import switch_cwd
 from beanhub_cli.config import Config
 from beanhub_cli.inbox.main import compute_missing_emails
 from beanhub_cli.main import cli
-from tests.factories import InboxEmailFactory
 
 
 @pytest.fixture
@@ -96,7 +97,31 @@ def test_dump(
     mocker: MockFixture,
 ):
     mock_decrypt_file = mocker.patch("beanhub_cli.encryption.decrypt_file")
-    mock_extract_tar = mocker.patch("beanhub_cli.file_io.extract_tar")
+
+    emails = [
+        InboxEmailFactory(id="email0"),
+        InboxEmailFactory(id="email1"),
+        InboxEmailFactory(id="email2"),
+        InboxEmailFactory(id="email3"),
+        InboxEmailFactory(id="email4"),
+    ]
+    inbox_doc = InboxDoc(
+        inbox=[
+            InboxConfig(
+                action=ArchiveInboxAction(output_file="inbox-data/default/{{ id }}.eml")
+            )
+        ]
+    )
+    inbox_doc_path = tmp_path / ".beanhub" / "inbox.yaml"
+    inbox_doc_path.parent.mkdir(exist_ok=True, parents=True)
+    inbox_doc_path.write_text(inbox_doc.model_dump_json())
+    existing_files = [
+        emails[1].id,
+    ]
+    for existing_file in existing_files:
+        existing_file_path = tmp_path / existing_file
+        existing_file_path.parent.mkdir(parents=True, exist_ok=True)
+        existing_file_path.write_text("")
 
     dump_id = uuid.uuid4()
     public_key = mock_private_key.public_key.encode(URLSafeBase64Encoder).decode(
@@ -119,6 +144,32 @@ def test_dump(
         method="GET",
         status_code=200,
         json=dict(
+            emails=[
+                emails[0].model_dump(mode="json"),
+                emails[2].model_dump(mode="json"),
+                emails[3].model_dump(mode="json"),
+            ],
+            cursor="MOCK_CURSOR0",
+        ),
+        match_headers={"access-token": mock_config.access_token.token},
+    )
+    httpx_mock.add_response(
+        url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/inbox/emails?cursor=MOCK_CURSOR0",
+        method="GET",
+        status_code=200,
+        json=dict(
+            emails=[
+                emails[4].model_dump(mode="json"),
+            ],
+            cursor="MOCK_CURSOR1",
+        ),
+        match_headers={"access-token": mock_config.access_token.token},
+    )
+    httpx_mock.add_response(
+        url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/inbox/emails?cursor=MOCK_CURSOR1",
+        method="GET",
+        status_code=200,
+        json=dict(
             emails=[],
         ),
         match_headers={"access-token": mock_config.access_token.token},
@@ -132,7 +183,12 @@ def test_dump(
         ),
         match_json=dict(
             public_key=public_key,
-            email_ids=["FIXME"],
+            email_ids=[
+                emails[0].id,
+                emails[2].id,
+                emails[3].id,
+                emails[4].id,
+            ],
         ),
         match_headers={"access-token": mock_config.access_token.token},
     )
@@ -166,18 +222,18 @@ def test_dump(
     )
 
     cli_runner.mix_stderr = False
-    result = cli_runner.invoke(
-        cli,
-        [
-            "inbox",
-            "dump",
-            "-w",
-            str(tmp_path),
-        ],
-    )
-    assert result.exit_code == 0
+    with switch_cwd(tmp_path):
+        result = cli_runner.invoke(
+            cli,
+            [
+                "inbox",
+                "dump",
+                "-w",
+                str(tmp_path),
+            ],
+        )
+        assert result.exit_code == 0
     mock_decrypt_file.assert_called_once()
-    mock_extract_tar.assert_called_once()
 
 
 def test_dump_without_emails(
