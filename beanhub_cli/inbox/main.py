@@ -20,7 +20,6 @@ from beanhub_inbox.processor import FinishExtractingColumn
 from beanhub_inbox.processor import FinishExtractingRow
 from beanhub_inbox.processor import FinishThinking
 from beanhub_inbox.processor import IgnoreEmail
-from beanhub_inbox.processor import InboxEmail
 from beanhub_inbox.processor import MatchImportRule
 from beanhub_inbox.processor import NoMatch
 from beanhub_inbox.processor import process_imports
