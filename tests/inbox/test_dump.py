@@ -1,7 +1,10 @@
 import json
+import pathlib
 import uuid
 
 import pytest
+from beanhub_inbox.data_types import InboxDoc
+from beanhub_inbox.data_types import InboxEmail
 from click.testing import CliRunner
 from nacl.encoding import URLSafeBase64Encoder
 from nacl.public import PrivateKey
@@ -10,6 +13,7 @@ from pytest_httpx import HTTPXMock
 from pytest_mock import MockFixture
 
 from beanhub_cli.config import Config
+from beanhub_cli.inbox.main import compute_missing_emails
 from beanhub_cli.main import cli
 
 
@@ -20,7 +24,41 @@ def mock_private_key(mocker: MockFixture) -> PrivateKey:
         yield key
 
 
+@pytest.mark.parametrize(
+    "inbox_doc, inbox_emails, existing_files, expected",
+    [
+        (
+            InboxDoc(),
+            [],
+            [],
+            [],
+        )
+    ],
+)
+def test_compute_missing_emails(
+    tmp_path: pathlib.Path,
+    inbox_doc: InboxDoc,
+    inbox_emails: list[InboxEmail],
+    existing_files: list[str],
+    expected: list[tuple[InboxEmail, pathlib.Path]],
+):
+    for existing_file in existing_files:
+        existing_file_path = tmp_path / existing_file
+        existing_file_path.write_text("")
+    assert (
+        list(
+            compute_missing_emails(
+                inbox_doc=inbox_doc,
+                inbox_emails=inbox_emails,
+                workdir_path=tmp_path,
+            )
+        )
+        == expected
+    )
+
+
 def test_dump(
+    tmp_path: pathlib.Path,
     cli_runner: CliRunner,
     mock_config: Config,
     httpx_mock: HTTPXMock,
@@ -103,6 +141,8 @@ def test_dump(
         [
             "inbox",
             "dump",
+            "-w",
+            str(tmp_path),
         ],
     )
     assert result.exit_code == 0
