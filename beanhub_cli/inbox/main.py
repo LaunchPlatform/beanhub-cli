@@ -252,8 +252,9 @@ def extract(
     for event in process_event_generators:
         if isinstance(event, StartProcessingEmail):
             logger.info(
-                "Processing email [green]%s[/] subject: [blue]%s[/]",
+                "Processing email [green]%s[/] at [green]%s[/], subject: [blue]%s[/]",
                 event.email_file.id,
+                event.email_file.filepath,
                 event.email_file.subject,
                 extra={"markup": True, "highlighter": None},
             )
@@ -279,7 +280,7 @@ def extract(
             )
         elif isinstance(event, CSVRowExists):
             logger.info(
-                "Skip processing email [green]%s[/] as it exists in the output CSV file at [green]%s[/]:[blue]%s[/] already",
+                "Skip processing email [green]%s[/] as the output row exists in the CSV file at [green]%s[/]:[blue]%s[/] already",
                 event.email_file.id,
                 event.output_csv,
                 event.lineno,
