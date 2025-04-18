@@ -208,8 +208,13 @@ def extract(
             config,
             extra={"markup": True, "highlighter": None},
         )
+    logger.debug(
+        f"Inbox doc: %s",
+        inbox_doc.model_dump_json(indent=2),
+        extra={"markup": True, "highlighter": JSONHighlighter()},
+    )
 
-    env.logger.info(
+    logger.info(
         "Extracting data with Ollama model [green]%s[/]",
         model,
         extra={"markup": True, "highlighter": None},
@@ -218,7 +223,7 @@ def extract(
     if debug_output_folder is not None:
         debug_output_path = pathlib.Path(debug_output_folder)
         debug_output_path.mkdir(parents=True, exist_ok=True)
-        env.logger.info(
+        logger.info(
             "Writing debugging files to [magenta]%s[/] folder",
             debug_output_path,
             extra={"markup": True, "highlighter": None},
@@ -335,7 +340,7 @@ def extract(
                 json.dumps(event.row, indent=2),
                 extra={"markup": True, "highlighter": JSONHighlighter()},
             )
-    env.logger.info("Done")
+    logger.info("Done")
 
 
 @cli.command(help="Dump emails files from BeanHub Inbox to your local environment")
