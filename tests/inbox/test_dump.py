@@ -97,6 +97,7 @@ def test_dump(
     mocker: MockFixture,
 ):
     mock_decrypt_file = mocker.patch("beanhub_cli.encryption.decrypt_file")
+    mock_extract_inbox_tar = mocker.patch("beanhub_cli.file_io.extract_inbox_tar")
 
     emails = [
         InboxEmailFactory(id="email0"),
@@ -234,6 +235,7 @@ def test_dump(
         )
         assert result.exit_code == 0
     mock_decrypt_file.assert_called_once()
+    mock_extract_inbox_tar.assert_called_once()
 
 
 def test_dump_without_emails(
