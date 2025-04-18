@@ -363,7 +363,6 @@ def extract(
     "-c",
     "--config",
     type=click.Path(dir_okay=False),
-    default=DEFAULT_INBOX_CONFIG_FILE,
     help="The path to inbox config file",
 )
 @click.option(
