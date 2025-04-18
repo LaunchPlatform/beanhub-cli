@@ -3,6 +3,8 @@ import pathlib
 import uuid
 
 import pytest
+from beanhub_inbox.data_types import ArchiveInboxAction
+from beanhub_inbox.data_types import InboxConfig
 from beanhub_inbox.data_types import InboxDoc
 from beanhub_inbox.data_types import InboxEmail
 from click.testing import CliRunner
@@ -15,6 +17,7 @@ from pytest_mock import MockFixture
 from beanhub_cli.config import Config
 from beanhub_cli.inbox.main import compute_missing_emails
 from beanhub_cli.main import cli
+from tests.factories import InboxEmailFactory
 
 
 @pytest.fixture
@@ -32,7 +35,25 @@ def mock_private_key(mocker: MockFixture) -> PrivateKey:
             [],
             [],
             [],
-        )
+        ),
+        (
+            InboxDoc(
+                inbox=[
+                    InboxConfig(
+                        action=ArchiveInboxAction(
+                            output_file="inbox-data/default/{{ id }}.eml"
+                        )
+                    )
+                ]
+            ),
+            [
+                InboxEmailFactory(id="email0"),
+            ],
+            [],
+            [
+                ("email0", "inbox-data/default/email0.eml"),
+            ],
+        ),
     ],
 )
 def test_compute_missing_emails(
@@ -47,10 +68,13 @@ def test_compute_missing_emails(
         existing_file_path.write_text("")
     assert (
         list(
-            compute_missing_emails(
-                inbox_doc=inbox_doc,
-                inbox_emails=inbox_emails,
-                workdir_path=tmp_path,
+            map(
+                lambda item: (item[0].id, str(item[1])),
+                compute_missing_emails(
+                    inbox_doc=inbox_doc,
+                    inbox_emails=inbox_emails,
+                    workdir_path=tmp_path,
+                ),
             )
         )
         == expected

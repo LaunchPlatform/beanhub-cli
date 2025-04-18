@@ -87,7 +87,7 @@ def compute_missing_emails(
     for inbox_email in inbox_emails:
         action = process_inbox_email(
             template_env=template_env,
-            email=inbox_email,
+            inbox_email=inbox_email,
             inbox_configs=inbox_doc.inbox,
         )
         if action is None:

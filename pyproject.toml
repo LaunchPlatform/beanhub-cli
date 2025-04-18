@@ -47,6 +47,7 @@ dev = [
     "mkdocs-material>=9.5.35,<10",
     "openapi-python-client>=0.23.0,<0.24",
     "pytest-httpx>=0.35.0,<0.36",
+    "pytest-factoryboy>=2.7.0",
 ]
 
 [build-system]
