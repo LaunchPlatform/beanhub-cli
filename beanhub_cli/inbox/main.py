@@ -178,7 +178,7 @@ def load_inbox_doc(config: str) -> InboxDoc:
     "-c",
     "--config",
     type=click.Path(dir_okay=False),
-    default=".beanhub/inbox.yaml",
+    default=DEFAULT_INBOX_CONFIG_FILE,
     help="The path to inbox config file",
 )
 @click.option(
@@ -359,7 +359,7 @@ def extract(
     "-c",
     "--config",
     type=click.Path(dir_okay=False),
-    default=".beanhub/inbox.yaml",
+    default=DEFAULT_INBOX_CONFIG_FILE,
     help="The path to inbox config file",
 )
 @click.option(
