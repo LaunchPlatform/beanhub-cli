@@ -10,6 +10,7 @@ Please read the [documentation here](https://beanhub-cli-docs.beanhub.io).
 - [**Formatter**](https://beanhub-cli-docs.beanhub.io/commands/format/) - Advanced Beancount file formatter based on top of [beancount-black](https://github.com/LaunchPlatform/beancount-black)
 - [**Beancount file manipulations**](https://beanhub-cli-docs.beanhub.io/commands/format/) - Effortless Beancount account name renaming and other basic manipulations
 - [**Forms**](https://beanhub-cli-docs.beanhub.io/commands/form/) - You can run a [BeanHub Form](https://beanhub.io/blog/2023/07/31/automating-beancount-data-input-with-beanhub-custom-forms/) web app locally to try out your forms
+- [**Inbox**](https://github.com/LaunchPlatform/beanhub-inbox) - Archive emails sending to a dedicated email address like yourname+repo@inbox.beanhub.io (BeanHub account needed) and then use LLM to extract values for your invoices and receipts
 - **Doesn't require a BeanHub account** - While some features require a BeanHub account to operate, but we make most of them usable even without a BeanHub account
 
 ## Screenshots
