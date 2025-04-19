@@ -16,6 +16,9 @@ Please read the [documentation here](https://beanhub-cli-docs.beanhub.io).
 ## Screenshots
 
 <p align="center">
+  <video src="https://github.com/user-attachments/assets/eb496dab-cd95-4aca-8a29-89ff9d52570d" autoplay muted>
+</p>
+<p align="center">
   <img src="https://github.com/LaunchPlatform/beanhub-cli/raw/master/assets/forms-screenshot.png?raw=true" alt="BeanHub Forms Screenshot" />
 </p>
 
