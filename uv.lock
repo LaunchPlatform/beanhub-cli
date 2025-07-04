@@ -151,7 +151,7 @@ requires-dist = [
     { name = "beanhub-extract", specifier = ">=0.1.0,<1.0.0" },
     { name = "beanhub-forms", specifier = ">=0.1.3,<0.2" },
     { name = "beanhub-import", specifier = ">=1.0.0,<2.0.0" },
-    { name = "beanhub-inbox", specifier = ">=0.2.1,<0.3.0" },
+    { name = "beanhub-inbox", specifier = ">=0.2.3,<0.3.0" },
     { name = "click", specifier = ">=8.1.7,<9" },
     { name = "cryptography", specifier = ">=44.0.0,<45" },
     { name = "fastapi", specifier = ">=0.98.0,<1.0.0" },
@@ -229,7 +229,7 @@ wheels = [
 
 [[package]]
 name = "beanhub-inbox"
-version = "0.2.1"
+version = "0.2.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "email-validator" },
@@ -237,12 +237,11 @@ dependencies = [
     { name = "lxml" },
     { name = "ollama" },
     { name = "pydantic" },
-    { name = "pytest-mock" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d3/5f/da251998dab8f74137eb387048012cfaac7321be05ddb4c6c63f9c3b459f/beanhub_inbox-0.2.1.tar.gz", hash = "sha256:31378bb2146fbf2c4438192785a871e7a6a6a54ce1c14e240ed2ca573a7e3cd9", size = 15157 }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/7c/d893e821754ddc72861a0ae7d0c84c56730e96ff6269d13bce7e40985c20/beanhub_inbox-0.2.3.tar.gz", hash = "sha256:6fe9312aacdce97483c8f3c9d307856ae4c73b8059b512acce8a0fe42698845b", size = 51376 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/82/b0edf57e8de1003c280935439697164ec8027077431cff7b7d386bc85168/beanhub_inbox-0.2.1-py3-none-any.whl", hash = "sha256:c6612958a0c109531a99a6f5d50f895cf2b29a2964704f500414f7178ff9e0e5", size = 10996 },
+    { url = "https://files.pythonhosted.org/packages/74/a1/376c9a036b06646559b5d819ad19127454032c558c554b142fdda549b71d/beanhub_inbox-0.2.3-py3-none-any.whl", hash = "sha256:0e3c92b4ef9136c7df3e7d28acdf9272ca2c7349df03f7a447c05ba844697035", size = 11283 },
 ]
 
 [[package]]
