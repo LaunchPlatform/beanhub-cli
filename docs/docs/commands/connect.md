@@ -10,13 +10,6 @@ Originally, this feature imports data as Git commits only to BeanHub's repositor
 Later on, we added the standalone commands to make it possible to pull bank transactions directly into your local work environment without relying on updates in BeanHub's Git repository.
 You can read our blog post [Direct Connect: Pulling transactions as CSV files from banks via Plaid directly](https://beanhub.io/blog/2025/01/16/direct-connect-repository/) to learn more.
 
-Please note that connect commands require some extra optional Python dependencies.
-Therefore, when installing BeanHub-CLI Python package, please make sure to include `connect` extra dependencies like this:
-
-```bash
-pip install "beanhub-cli[connect]"
-```
-
 ## Pre-requirements
 
 To pull transaction data from your bank automatically, you need to first log into your BeanHub account on our web app and then go to your repository.

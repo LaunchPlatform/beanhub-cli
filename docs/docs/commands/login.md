@@ -4,13 +4,6 @@ We provide BeanHub-CLI as a standalone tool to work without a [BeanHub](https://
 However, some features are for paid BeanHub members only and require access to your BeanHub account, such as [BeanHub Connect](https://beanhub.io/blog/2024/06/24/introduction-of-beanhub-connect/)'s sync and dump.
 For those operations, you need to run the login command first.
 
-Please note that BeanHub-CLI login command requires some extra optional Python dependencies.
-Therefore, when installing BeanHub-CLI Python package, please make sure to include `login` extra dependencies like this:
-
-```bash
-pip install "beanhub-cli[login]"
-```
-
 It's very easy to log in to your BeanHub account with BeanHub-CLI. Simply run:
 
 ```bash
