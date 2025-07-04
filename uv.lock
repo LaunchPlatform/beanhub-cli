@@ -153,7 +153,7 @@ requires-dist = [
     { name = "beanhub-import", specifier = ">=1.0.0,<2.0.0" },
     { name = "beanhub-inbox", specifier = ">=0.2.3,<0.3.0" },
     { name = "click", specifier = ">=8.1.7,<9" },
-    { name = "cryptography", specifier = ">=44.0.0,<45" },
+    { name = "cryptography", specifier = ">=44.0.0" },
     { name = "fastapi", specifier = ">=0.98.0,<1.0.0" },
     { name = "httpx", specifier = ">=0.20.0,<0.29.0" },
     { name = "jinja2", specifier = ">=3.1.2,<4.0.0" },
