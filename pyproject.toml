@@ -1,6 +1,6 @@
 [project]
 name = "beanhub-cli"
-version = "3.0.0"
+version = "3.0.1"
 description = "Command line tools for BeanHub and Beancount users"
 authors = [{ name = "Fang-Pen Lin", email = "fangpen@launchplatform.com" }]
 requires-python = "~=3.10"
