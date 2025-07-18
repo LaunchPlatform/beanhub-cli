@@ -1,5 +1,6 @@
 import copy
 import functools
+import logging
 import pathlib
 import shutil
 import sys
@@ -115,6 +116,81 @@ def combine_transforms(
     return tree_or_token
 
 
+def format_beancount(
+    filenames: list[pathlib.Path],
+    backup_suffix: str = ".backup",
+    rename_account: list[tuple[str, str]] | None = None,
+    rename_currency: list[tuple[str, str]] | None = None,
+    stdin_mode: bool = False,
+    backup: bool = False,
+    logger: logging.Logger | None = None,
+):
+    logger = logger or logging.getLogger(__name__)
+    tree_transformers: list[typing.Callable] = []
+    if rename_account:
+        for from_val, to_val in rename_account:
+            logger.info("Renaming account from %s to %s", from_val, to_val)
+        tree_transformers.append(
+            functools.partial(rename_account_transform, dict(rename_account))
+        )
+    if rename_currency:
+        for from_val, to_val in rename_currency:
+            logger.info("Renaming currency from %s to %s", from_val, to_val)
+        tree_transformers.append(
+            functools.partial(rename_commodity_transform, dict(rename_currency))
+        )
+
+    # TODO: support follow include statements
+    parser = make_parser()
+    if stdin_mode:
+        logger.info("Processing in stdin mode")
+        input_content = sys.stdin.read()
+        tree = parser.parse(input_content)
+        formatter = Formatter()
+        formatter.format(tree, sys.stdout)
+    else:
+        if filenames:
+            iterator = file_tree_iterator(
+                parser=parser,
+                filenames=filenames,
+            )
+        else:
+            logger.info("No files provided, traverse starting from main.bean")
+            iterator = traverse(
+                parser=parser,
+                bean_file=pathlib.Path("main.bean"),
+                root_dir=pathlib.Path.cwd(),
+            )
+        for filepath, tree in iterator:
+            logger.info("Processing file %s", filepath)
+            if tree_transformers:
+                logger.info(
+                    "Running %s transforms against file %s ...",
+                    len(tree_transformers),
+                    filepath,
+                )
+                tree = walk_tree(
+                    tree,
+                    functools.partial(combine_transforms, tree_transformers),
+                )
+            with tempfile.NamedTemporaryFile(mode="wt+", suffix=".bean") as output_file:
+                formatter = Formatter()
+                formatter.format(tree, output_file)
+                output_file.seek(0)
+                output_content = output_file.read()
+                input_content = filepath.read_text()
+                if input_content == output_content:
+                    logger.info("File %s is not changed, skip", filepath)
+                    continue
+                if backup:
+                    backup_path = create_backup(src=filepath, suffix=backup_suffix)
+                    logger.info("File %s changed, backup to %s", filepath, backup_path)
+                output_file.seek(0)
+                with open(filepath, "wt") as input_file:
+                    shutil.copyfileobj(output_file, input_file)
+    logger.info("done")
+
+
 @cli.command(name="format", help="Format Beancount files with beancount-black")
 @click.argument("filename", type=click.Path(exists=False, dir_okay=False), nargs=-1)
 @click.option(
@@ -153,68 +229,12 @@ def main(
     stdin_mode: bool,
     backup: bool,
 ):
-    tree_transformers: list[typing.Callable] = []
-    if rename_account:
-        for from_val, to_val in rename_account:
-            env.logger.info("Renaming account from %s to %s", from_val, to_val)
-        tree_transformers.append(
-            functools.partial(rename_account_transform, dict(rename_account))
-        )
-    if rename_currency:
-        for from_val, to_val in rename_currency:
-            env.logger.info("Renaming currency from %s to %s", from_val, to_val)
-        tree_transformers.append(
-            functools.partial(rename_commodity_transform, dict(rename_currency))
-        )
-
-    # TODO: support follow include statements
-    parser = make_parser()
-    if stdin_mode:
-        env.logger.info("Processing in stdin mode")
-        input_content = sys.stdin.read()
-        tree = parser.parse(input_content)
-        formatter = Formatter()
-        formatter.format(tree, sys.stdout)
-    else:
-        if filename:
-            iterator = file_tree_iterator(
-                parser=parser,
-                filenames=map(lambda item: pathlib.Path(str(item)), filename),
-            )
-        else:
-            env.logger.info("No files provided, traverse starting from main.bean")
-            iterator = traverse(
-                parser=parser,
-                bean_file=pathlib.Path("main.bean"),
-                root_dir=pathlib.Path.cwd(),
-            )
-        for filepath, tree in iterator:
-            env.logger.info("Processing file %s", filepath)
-            if tree_transformers:
-                env.logger.info(
-                    "Running %s transforms against file %s ...",
-                    len(tree_transformers),
-                    filepath,
-                )
-                tree = walk_tree(
-                    tree,
-                    functools.partial(combine_transforms, tree_transformers),
-                )
-            with tempfile.NamedTemporaryFile(mode="wt+", suffix=".bean") as output_file:
-                formatter = Formatter()
-                formatter.format(tree, output_file)
-                output_file.seek(0)
-                output_content = output_file.read()
-                input_content = filepath.read_text()
-                if input_content == output_content:
-                    env.logger.info("File %s is not changed, skip", filepath)
-                    continue
-                if backup:
-                    backup_path = create_backup(src=filepath, suffix=backup_suffix)
-                    env.logger.info(
-                        "File %s changed, backup to %s", filepath, backup_path
-                    )
-                output_file.seek(0)
-                with open(filepath, "wt") as input_file:
-                    shutil.copyfileobj(output_file, input_file)
-    env.logger.info("done")
+    format_beancount(
+        filenames=list(map(lambda item: pathlib.Path(str(item)), filename)),
+        backup_suffix=backup_suffix,
+        rename_account=rename_account,
+        rename_currency=rename_currency,
+        stdin_mode=stdin_mode,
+        backup=backup,
+        logger=env.logger,
+    )

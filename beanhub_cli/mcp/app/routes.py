@@ -1,5 +1,6 @@
 import json
 import logging
+import pathlib
 import subprocess
 import sys
 
@@ -9,7 +10,9 @@ from fastapi import APIRouter
 from fastapi import Request
 from pydantic import TypeAdapter
 
+from ...format import format_beancount
 from ..schemes import ExportBeancountResult
+from ..schemes import FormatResult
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -42,3 +45,18 @@ async def list_entries(
     else:
         logger.error("Failed to export entries: %s", result.error)
     return result
+
+
+@router.get(
+    "/format",
+    response_model=FormatResult,
+    operation_id="format-beancount-file",
+    description="Format beancount files",
+)
+async def list_entries(
+    request: Request, beancount_file: str = "main.bean"
+) -> FormatResult:
+    format_beancount(filenames=[pathlib.Path(beancount_file)])
+    return FormatResult(
+        ok=True,
+    )
