@@ -34,8 +34,8 @@ async def list_entries(
     )
     if proc.returncode == 0:
         result.options = json.loads(lines[0])
-        result.validation_result = (ValidationResult.model_validate_json(lines[2]),)
-        result.entries = (list(map(entry_adapter.validate_json, lines[4:])),)
+        result.validation_result = ValidationResult.model_validate_json(lines[2])
+        result.entries = list(map(entry_adapter.validate_json, lines[4:]))
     else:
         logger.error("Failed to export entries: %s", result.error)
     return result
