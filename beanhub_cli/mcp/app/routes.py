@@ -53,7 +53,7 @@ async def list_entries(
     operation_id="format-beancount-file",
     description="Format beancount files",
 )
-async def list_entries(
+async def format_beancount_file(
     request: Request, beancount_file: str = "main.bean"
 ) -> FormatResult:
     format_beancount(filenames=[pathlib.Path(beancount_file)])
