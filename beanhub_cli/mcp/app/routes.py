@@ -17,7 +17,10 @@ entry_adapter = TypeAdapter(EntryUnion)
 
 
 @router.get(
-    "/entries", response_model=ExportBeancountResult, operation_id="list-entries"
+    "/entries",
+    response_model=ExportBeancountResult,
+    operation_id="list-entries",
+    description="List all Beancount entries for the given Beancount file",
 )
 async def list_entries(
     request: Request, beancount_file: str = "main.bean"
