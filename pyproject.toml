@@ -27,9 +27,12 @@ dependencies = [
     "beanhub-import>= 1.0.0, <2.0.0",
     "beanhub-extract>= 0.1.0, <1.0.0",
     "beancount-parser>= 1.2.3, <1.3.0",
-    "beanhub-inbox>=0.2.3, <0.3.0",
+    "beanhub-inbox>=0.2.3,<0.3.0",
     "cryptography>=44.0.0",
     "fastapi-mcp>=0.3.7",
+    "beancount-data>=3.0.2",
+    "beancount-exporter>=3.0.0",
+    "orjson>=3.11.0",
 ]
 
 [project.urls]

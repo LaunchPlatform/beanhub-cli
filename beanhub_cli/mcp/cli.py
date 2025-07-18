@@ -3,9 +3,8 @@ from ..cli import cli as root_cli
 
 
 @root_cli.group(
-    name="form",
-    help="Validating BeanHub Forms and running a simple web app.",
-    cls=AliasedGroup,
+    name="mcp",
+    help="Run Model Context Protocol (MCP) server for LLM to access your Beancount books",
 )
 def cli():
     pass
