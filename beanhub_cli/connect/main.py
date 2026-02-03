@@ -55,6 +55,7 @@ def run_sync(env: Environment, config: AuthConfig):
         [
             PlaidItemSyncState.IMPORT_FAILED,
             PlaidItemSyncState.SYNC_FAILED,
+            PlaidItemSyncState.SKIPPED,
         ]
     )
 
