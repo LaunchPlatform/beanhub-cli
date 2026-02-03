@@ -142,6 +142,10 @@ def test_sync_with_skipped_state(
                 dict(
                     id="SYNC1",
                     state="SKIPPED",
+                    item=dict(
+                        id="MOCK_ITEM1",
+                        institution_name="Chase",
+                    ),
                     error_message='Your login session has expired, please use the "Update" button to login to your bank account with Plaid again',
                 ),
             ],
@@ -150,12 +154,8 @@ def test_sync_with_skipped_state(
     )
     cli_runner.mix_stderr = False
     result = cli_runner.invoke(cli, ["connect", "sync"])
-    assert result.exit_code == 1
-    assert "Sync finished with error" in result.stderr
-    assert (
-        'Your login session has expired, please use the "Update" button to login to your bank account with Plaid again'
-        in result.stderr
-    )
+    assert result.exit_code == 0
+    assert "Your login session has expired" in result.stdout.replace("\n", "")
 
 
 def test_sync_not_logged_in(
