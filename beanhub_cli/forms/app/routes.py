@@ -38,9 +38,9 @@ async def home(
     sample_form_doc: deps.SampleFormDocDep,
 ):
     return templates.TemplateResponse(
+        request,
         "home.html",
         dict(
-            request=request,
             form_doc=form_doc,
             sample_form_doc=sample_form_doc,
         ),
@@ -112,9 +112,9 @@ async def submit_form(
     if form_schema.display_name is not None:
         display_name = form_schema.display_name
     return templates.TemplateResponse(
+        request,
         "form.html",
         dict(
-            request=request,
             form_schema=form_schema,
             display_name=display_name,
             form=form,
@@ -150,9 +150,9 @@ def form_doc_errors(
         value_error = exc
 
     return templates.TemplateResponse(
+        request,
         "errors.html",
         dict(
-            request=request,
             doc_path=doc_path,
             validation_error=validation_error,
             value_error=value_error,
