@@ -1,5 +1,9 @@
+import concurrent.futures
+import multiprocessing
+import os
 import pathlib
 import sys
+import time
 
 import click
 import rich
@@ -7,6 +11,7 @@ import yaml
 from beancount_black.formatter import Formatter
 from beancount_parser.parser import make_parser
 from beanhub_extract.utils import strip_base_path
+from beanhub_import.data_types import ChangeSet
 from beanhub_import.data_types import DeletedTransaction
 from beanhub_import.data_types import GeneratedTransaction
 from beanhub_import.data_types import ImportDoc
@@ -15,10 +20,15 @@ from beanhub_import.post_processor import apply_change_set
 from beanhub_import.post_processor import compute_changes
 from beanhub_import.post_processor import extract_existing_transactions
 from beanhub_import.post_processor import txn_to_text
-from beanhub_import.processor import process_imports
+from beanhub_import.processor import collect_import_files
+from beanhub_import.processor import process_import_file
 from rich import box
 from rich.markup import escape
 from rich.padding import Padding
+from rich.progress import BarColumn
+from rich.progress import Progress
+from rich.progress import SpinnerColumn
+from rich.progress import TextColumn
 from rich.table import Table
 
 from .cli import cli
@@ -28,6 +38,35 @@ from .environment import pass_env
 IMPORT_DOC_FILE = pathlib.Path(".beanhub") / "imports.yaml"
 TABLE_HEADER_STYLE = "yellow"
 TABLE_COLUMN_STYLE = "cyan"
+DEFAULT_WORKERS = os.cpu_count() or 1
+
+
+def _process_context() -> multiprocessing.context.BaseContext:
+    if hasattr(os, "fork"):
+        return multiprocessing.get_context("forkserver")
+    return multiprocessing.get_context("spawn")
+
+
+def _apply_change_set_to_file(
+    target_file: pathlib.Path,
+    change_set: ChangeSet,
+    remove_dangling: bool,
+) -> None:
+    parser = make_parser()
+    if not target_file.exists():
+        if change_set.remove or change_set.update:
+            raise ValueError("Expect new transactions to add only")
+        bean_content = "\n\n".join(map(txn_to_text, change_set.add))
+        new_tree = parser.parse(bean_content)
+    else:
+        tree = parser.parse(target_file.read_text())
+        new_tree = apply_change_set(
+            tree=tree, change_set=change_set, remove_dangling=remove_dangling
+        )
+
+    with target_file.open("wt") as fo:
+        formatter = Formatter()
+        formatter.format(new_tree, fo)
 
 
 @cli.command(
@@ -51,19 +90,46 @@ TABLE_COLUMN_STYLE = "cyan"
 @click.option(
     "-b",
     "--beanfile",
-    type=click.Path(exists=True, dir_okay=False, file_okay=True),
+    type=click.Path(dir_okay=False, file_okay=True),
     default="main.bean",
-    help="The path to main entry beancount file",
+    help="The path to main entry beancount file, relative to workdir",
 )
 @click.option(
     "--remove-dangling",
     is_flag=True,
     help="Remove dangling transactions (existing imported transactions in Beancount files without corresponding generated transactions)",
 )
+@click.option(
+    "-j",
+    "--workers",
+    type=click.IntRange(min=1),
+    default=DEFAULT_WORKERS,
+    show_default=True,
+    help="Number of workers for import processing and change-set application",
+)
+@click.option(
+    "-v",
+    "--verbose",
+    is_flag=True,
+    help="Log each generated, deleted, and skipped transaction",
+)
+@click.option(
+    "--detailed-report",
+    is_flag=True,
+    help="Show detailed transaction tables in the import report",
+)
 @pass_env
 def main(
-    env: Environment, config: str, workdir: str, beanfile: str, remove_dangling: bool
+    env: Environment,
+    config: str,
+    workdir: str,
+    beanfile: str,
+    remove_dangling: bool,
+    workers: int,
+    verbose: bool,
+    detailed_report: bool,
 ):
+    start_time = time.perf_counter()
     config_path = pathlib.Path(config)
     with config_path.open("rt") as fo:
         doc_payload = yaml.safe_load(fo)
@@ -78,44 +144,104 @@ def main(
     generated_txns: list[GeneratedTransaction] = []
     deleted_txns: list[DeletedTransaction] = []
     unprocessed_txns: list[UnprocessedTransaction] = []
-    for txn in process_imports(import_doc=import_doc, input_dir=workdir_path):
+
+    def handle_import_txn(
+        txn: GeneratedTransaction | DeletedTransaction | UnprocessedTransaction,
+    ) -> None:
         if isinstance(txn, GeneratedTransaction):
-            generated_file_path = (workdir_path / txn.file).resolve()
-            env.logger.info(
-                "Generated transaction [green]%s[/] to file [green]%s[/]",
-                txn.id,
-                strip_base_path(workdir_path.resolve(), generated_file_path),
-                extra={"markup": True, "highlighter": None},
-            )
+            if verbose:
+                generated_file_path = (workdir_path / txn.file).resolve()
+                env.logger.info(
+                    "Generated transaction [green]%s[/] to file [green]%s[/]",
+                    txn.id,
+                    strip_base_path(workdir_path.resolve(), generated_file_path),
+                    extra={"markup": True, "highlighter": None},
+                )
             generated_txns.append(txn)
         elif isinstance(txn, DeletedTransaction):
-            env.logger.info(
-                "Deleted transaction [green]%s[/]",
-                txn.id,
-                extra={"markup": True, "highlighter": None},
-            )
+            if verbose:
+                env.logger.info(
+                    "Deleted transaction [green]%s[/]",
+                    txn.id,
+                    extra={"markup": True, "highlighter": None},
+                )
             deleted_txns.append(txn)
         elif isinstance(txn, UnprocessedTransaction):
-            env.logger.info(
-                "Skipped input transaction %s at [green]%s[/]:[blue]%s[/]",
-                txn.import_id,
-                txn.txn.file,
-                txn.txn.lineno,
-                extra={"markup": True, "highlighter": None},
-            )
+            if verbose:
+                env.logger.info(
+                    "Skipped input transaction %s at [green]%s[/]:[blue]%s[/]",
+                    txn.import_id,
+                    txn.txn.file,
+                    txn.txn.lineno,
+                    extra={"markup": True, "highlighter": None},
+                )
             unprocessed_txns.append(txn)
         else:
             raise ValueError(f"Unexpected type {type(txn)}")
-    env.logger.info("Generated %s transactions", len(generated_txns))
-    env.logger.info("Deleted %s transactions", len(deleted_txns))
-    env.logger.info("Skipped %s transactions", len(unprocessed_txns))
 
+    import_files = collect_import_files(import_doc=import_doc, input_dir=workdir_path)
+    env.logger.info("Collected %s import files", len(import_files))
+    if verbose:
+        for import_file in import_files:
+            env.logger.info(
+                "Import file [green]%s[/]",
+                strip_base_path(workdir_path.resolve(), import_file.filepath.resolve()),
+                extra={"markup": True, "highlighter": None},
+            )
+
+    def iter_import_results():
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=workers,
+            mp_context=_process_context(),
+        ) as executor:
+            yield from zip(
+                import_files,
+                executor.map(process_import_file, import_files, chunksize=1),
+            )
+
+    if verbose:
+        for import_file, results in iter_import_results():
+            env.logger.info(
+                "Processing import file [green]%s[/]",
+                strip_base_path(workdir_path.resolve(), import_file.filepath.resolve()),
+                extra={"markup": True, "highlighter": None},
+            )
+            for txn in results:
+                handle_import_txn(txn)
+    else:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            transient=True,
+        ) as progress:
+            task = progress.add_task("Processing imports", total=len(import_files))
+            for _import_file, results in iter_import_results():
+                for txn in results:
+                    handle_import_txn(txn)
+                progress.advance(task)
+                progress.update(
+                    task,
+                    description=(
+                        "Processing imports "
+                        f"({len(generated_txns)} generated, "
+                        f"{len(deleted_txns)} deleted, "
+                        f"{len(unprocessed_txns)} skipped)"
+                    ),
+                )
     beanfile_path = (workdir_path / pathlib.Path(beanfile)).resolve()
     if not beanfile_path.is_relative_to(workdir_path.resolve()):
         env.logger.error(
             "The provided beanfile path %s is not a sub-path of workdir %s",
             beanfile_path,
             workdir_path,
+        )
+        sys.exit(-1)
+    if not beanfile_path.is_file():
+        env.logger.error(
+            "The provided beanfile path %s does not exist",
+            beanfile_path,
         )
         sys.exit(-1)
 
@@ -145,36 +271,58 @@ def main(
         deleted_txns=deleted_txns,
         work_dir=workdir_path,
     )
-    for target_file, change_set in change_sets.items():
-        if not target_file.exists():
-            if change_set.remove or change_set.update:
-                raise ValueError("Expect new transactions to add only")
-            env.logger.info(
-                "Create new bean file %s with %s transactions",
-                target_file,
-                len(change_set.add),
+    with concurrent.futures.ProcessPoolExecutor(
+        max_workers=workers,
+        mp_context=_process_context(),
+    ) as executor:
+        futures = []
+        for target_file, change_set in change_sets.items():
+            if not target_file.exists():
+                if change_set.remove or change_set.update:
+                    raise ValueError("Expect new transactions to add only")
+                env.logger.info(
+                    "Create new bean file %s with %s transactions",
+                    target_file,
+                    len(change_set.add),
+                )
+            else:
+                env.logger.info(
+                    "Applying change sets (add=%s, update=%s, remove=%s, dangling=%s) with remove_dangling=%s to %s",
+                    len(change_set.add),
+                    len(change_set.update),
+                    len(change_set.remove),
+                    len(change_set.dangling),
+                    remove_dangling,
+                    target_file,
+                )
+            futures.append(
+                executor.submit(
+                    _apply_change_set_to_file,
+                    target_file,
+                    change_set,
+                    remove_dangling,
+                )
             )
+        for future in concurrent.futures.as_completed(futures):
+            future.result()
 
-            bean_content = "\n\n".join(map(txn_to_text, change_set.add))
-            new_tree = parser.parse(bean_content)
-        else:
-            env.logger.info(
-                "Applying change sets (add=%s, update=%s, remove=%s, dangling=%s) with remove_dangling=%s to %s",
-                len(change_set.add),
-                len(change_set.update),
-                len(change_set.remove),
-                len(change_set.dangling),
-                remove_dangling,
-                target_file,
-            )
-            tree = parser.parse(target_file.read_text())
-            new_tree = apply_change_set(
-                tree=tree, change_set=change_set, remove_dangling=remove_dangling
-            )
+    dangling_count = sum(
+        len(change_set.dangling or []) for change_set in change_sets.values()
+    )
+    open_txn_count = sum(
+        1
+        for txn in unprocessed_txns
+        if txn.import_id not in imported_txns_with_override
+    )
+    env.logger.info("Generated %s transactions", len(generated_txns))
+    env.logger.info("Deleted %s transactions", len(deleted_txns))
+    env.logger.info("Skipped %s transactions", len(unprocessed_txns))
+    env.logger.info("Dangling %s transactions", dangling_count)
+    env.logger.info("Open %s transactions", open_txn_count)
 
-        with target_file.open("wt") as fo:
-            formatter = Formatter()
-            formatter.format(new_tree, fo)
+    if not detailed_report:
+        env.logger.info("done in %.2fs", time.perf_counter() - start_time)
+        return
 
     table = Table(
         title="Deleted transactions",
@@ -265,4 +413,4 @@ def main(
         )
     rich.print(Padding(table, (1, 0, 0, 4)))
 
-    env.logger.info("done")
+    env.logger.info("done in %.2fs", time.perf_counter() - start_time)
