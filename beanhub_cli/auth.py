@@ -4,6 +4,7 @@ import sys
 import typing
 
 from .config import load_config
+from .git_repo import resolve_repo_from_git
 from .http_client import make_auth_client
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,19 @@ def ensure_auth_config(api_base_url: str, repo: str | None) -> AuthConfig:
         )
         sys.exit(-1)
     if repo is None and (config.repo is None or config.repo.default is None):
+        git_repo = resolve_repo_from_git()
+        if git_repo is not None:
+            logger.info(
+                "Determined repo automatically from git remote: %s",
+                git_repo,
+            )
+            username, repo_name = parse_repo(git_repo)
+            return AuthConfig(
+                token=config.access_token.token,
+                username=username,
+                repo=repo_name,
+            )
+
         logger.info(
             "No repo provided, try to determine which repo to use automatically ..."
         )
