@@ -7,7 +7,7 @@ BEANHUB_HTTPS_REMOTE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 BEANHUB_SSH_REMOTE_PATTERN = re.compile(
-    r"^git@[^:]+:(?:repos/)?(?P<username>[^/]+)/(?P<repo_name>[^/.]+?)(?:\.git)?/?$",
+    r"^git@[^:]*beanhub[^:]*:(?:repos/)?(?P<username>[^/]+)/(?P<repo_name>[^/.]+?)(?:\.git)?/?$",
     re.IGNORECASE,
 )
 
