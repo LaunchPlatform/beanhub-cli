@@ -1,4 +1,5 @@
 import concurrent.futures
+import multiprocessing
 import os
 import pathlib
 import sys
@@ -38,6 +39,12 @@ IMPORT_DOC_FILE = pathlib.Path(".beanhub") / "imports.yaml"
 TABLE_HEADER_STYLE = "yellow"
 TABLE_COLUMN_STYLE = "cyan"
 DEFAULT_WORKERS = os.cpu_count() or 1
+
+
+def _process_context() -> multiprocessing.context.BaseContext:
+    if hasattr(os, "fork"):
+        return multiprocessing.get_context("forkserver")
+    return multiprocessing.get_context("spawn")
 
 
 def _apply_change_set_to_file(
@@ -183,7 +190,10 @@ def main(
             )
 
     def iter_import_results():
-        with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=workers,
+            mp_context=_process_context(),
+        ) as executor:
             yield from zip(
                 import_files,
                 executor.map(process_import_file, import_files, chunksize=1),
@@ -255,7 +265,10 @@ def main(
         deleted_txns=deleted_txns,
         work_dir=workdir_path,
     )
-    with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
+    with concurrent.futures.ProcessPoolExecutor(
+        max_workers=workers,
+        mp_context=_process_context(),
+    ) as executor:
         futures = []
         for target_file, change_set in change_sets.items():
             if not target_file.exists():

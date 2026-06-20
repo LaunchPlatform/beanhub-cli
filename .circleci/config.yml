@@ -16,7 +16,35 @@ jobs:
           command: pip install uv
       - run:
           name: Run test
-          command: uv run python -m pytest ./tests -svvvv
+          command: uv run python -m pytest ./tests --ignore=tests/benchmark -svvvv
+  benchmark:
+    docker:
+      - image: cimg/python:3.10.14
+    steps:
+      - checkout
+      - run:
+          name: Install uv
+          command: pip install uv
+      - run:
+          name: Run benchmarks
+          command: |
+            mkdir -p benchmark-results
+            uv run python -m pytest tests/benchmark \
+              --benchmark-only \
+              --benchmark-json=benchmark-results/benchmark.json \
+              --benchmark-save=ci \
+              --benchmark-group-by=param \
+              -v
+      - run:
+          name: Print benchmark summary
+          command: uv run python scripts/print_benchmark_results.py benchmark-results/benchmark.json
+          when: always
+      - store_artifacts:
+          path: benchmark-results
+          destination: benchmark-results
+      - store_artifacts:
+          path: .benchmarks
+          destination: benchmark-historical
   build-and-publish:
     docker:
       - image: cimg/python:3.10.14
@@ -39,6 +67,10 @@ workflows:
           filters:
             # needed for deploy build
             # ref: https://discuss.circleci.com/t/builds-for-tags-not-triggering/17681/7
+            tags:
+              only: /^.*/
+      - benchmark:
+          filters:
             tags:
               only: /^.*/
       - build-and-publish:
