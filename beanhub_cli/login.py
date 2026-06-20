@@ -13,6 +13,7 @@ from .config import load_config
 from .config import save_config
 from .environment import Environment
 from .environment import pass_env
+from .http_client import make_client
 from .internal_api.api.auth import create_auth_session
 from .internal_api.api.auth import poll_auth_session
 from .internal_api.client import Client
@@ -87,6 +88,6 @@ def main(env: Environment):
         sys.exit(-1)
 
     logger.info("Creating auth session ...")
-    with Client(base_url=env.api_base_url) as client:
+    with make_client(base_url=env.api_base_url) as client:
         client.raise_on_unexpected_status = True
         run_login(client=client)

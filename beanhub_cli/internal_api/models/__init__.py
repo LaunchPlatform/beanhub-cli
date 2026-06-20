@@ -7,6 +7,7 @@ from .create_dump_request_request import CreateDumpRequestRequest
 from .create_dump_request_response import CreateDumpRequestResponse
 from .create_inbox_dump_request import CreateInboxDumpRequest
 from .create_inbox_dump_request_response import CreateInboxDumpRequestResponse
+from .create_sync_batch_request import CreateSyncBatchRequest
 from .create_sync_batch_response import CreateSyncBatchResponse
 from .dump_request_state import DumpRequestState
 from .generic_error import GenericError
@@ -23,6 +24,7 @@ from .list_repositories_response import ListRepositoriesResponse
 from .plaid_item_sync_state import PlaidItemSyncState
 from .repository import Repository
 from .repository_type import RepositoryType
+from .sync_batch_state import SyncBatchState
 from .sync_data import SyncData
 from .validation_error import ValidationError
 
@@ -35,6 +37,7 @@ __all__ = (
     "CreateDumpRequestResponse",
     "CreateInboxDumpRequest",
     "CreateInboxDumpRequestResponse",
+    "CreateSyncBatchRequest",
     "CreateSyncBatchResponse",
     "DumpRequestState",
     "GenericError",
@@ -51,6 +54,7 @@ __all__ = (
     "PlaidItemSyncState",
     "Repository",
     "RepositoryType",
+    "SyncBatchState",
     "SyncData",
     "ValidationError",
 )

@@ -1,16 +1,13 @@
 from enum import Enum
 
 
-class PlaidItemSyncState(str, Enum):
+class SyncBatchState(str, Enum):
+    IMPORTING = "IMPORTING"
     IMPORT_COMPLETE = "IMPORT_COMPLETE"
     IMPORT_COMPLETE_NO_CHANGES = "IMPORT_COMPLETE_NO_CHANGES"
     IMPORT_FAILED = "IMPORT_FAILED"
-    PENDING = "PENDING"
-    PROCESSING = "PROCESSING"
-    SKIPPED = "SKIPPED"
+    SYNCING = "SYNCING"
     SYNC_COMPLETE = "SYNC_COMPLETE"
-    SYNC_COMPLETE_ONLY = "SYNC_COMPLETE_ONLY"
-    SYNC_FAILED = "SYNC_FAILED"
 
     def __str__(self) -> str:
         return str(self.value)
