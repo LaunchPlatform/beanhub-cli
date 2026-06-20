@@ -90,9 +90,9 @@ def _apply_change_set_to_file(
 @click.option(
     "-b",
     "--beanfile",
-    type=click.Path(exists=True, dir_okay=False, file_okay=True),
+    type=click.Path(dir_okay=False, file_okay=True),
     default="main.bean",
-    help="The path to main entry beancount file",
+    help="The path to main entry beancount file, relative to workdir",
 )
 @click.option(
     "--remove-dangling",
@@ -236,6 +236,12 @@ def main(
             "The provided beanfile path %s is not a sub-path of workdir %s",
             beanfile_path,
             workdir_path,
+        )
+        sys.exit(-1)
+    if not beanfile_path.is_file():
+        env.logger.error(
+            "The provided beanfile path %s does not exist",
+            beanfile_path,
         )
         sys.exit(-1)
 
