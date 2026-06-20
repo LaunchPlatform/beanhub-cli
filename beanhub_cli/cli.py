@@ -36,3 +36,5 @@ def cli(env: Environment, log_level: str):
     )
     httpx_logger = logging.getLogger("httpx")
     httpx_logger.level = logging.WARNING
+    beancount_black_logger = logging.getLogger("beancount_black.formatter")
+    beancount_black_logger.level = logging.WARNING
