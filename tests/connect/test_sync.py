@@ -403,7 +403,7 @@ def test_sync_with_import_and_commit(
         match_headers={"access-token": mock_config.access_token.token},
     )
     cli_runner.mix_stderr = False
-    result = cli_runner.invoke(cli, ["connect", "sync", "--import-and-commit"])
+    result = cli_runner.invoke(cli, ["connect", "sync", "-i"])
     assert result.exit_code == 0
     output = result.stdout.replace("\n", "") + result.stderr.replace("\n", "")
     assert "Batch import and commit finished" in output
@@ -466,7 +466,7 @@ def test_sync_with_import_and_commit_failed(
         match_headers={"access-token": mock_config.access_token.token},
     )
     cli_runner.mix_stderr = False
-    result = cli_runner.invoke(cli, ["connect", "sync", "--import-and-commit"])
+    result = cli_runner.invoke(cli, ["connect", "sync", "-i"])
     assert result.exit_code == -1
     output = result.stdout.replace("\n", "") + result.stderr.replace("\n", "")
     assert "Batch import and commit failed with error" in output
@@ -480,7 +480,7 @@ def test_sync_with_import_and_commit_connect_only(
 ):
     _mock_list_repo(httpx_mock, mock_config, repo_type="CONNECT")
     cli_runner.mix_stderr = False
-    result = cli_runner.invoke(cli, ["connect", "sync", "--import-and-commit"])
+    result = cli_runner.invoke(cli, ["connect", "sync", "-i"])
     assert result.exit_code == -1
     output = result.stdout.replace("\n", "") + result.stderr.replace("\n", "")
     assert "syncing transactions and exporting data" in output
@@ -513,7 +513,7 @@ def test_sync_with_import_and_commit_rejected_by_api(
         match_json={"import_and_commit": True},
     )
     cli_runner.mix_stderr = False
-    result = cli_runner.invoke(cli, ["connect", "sync", "--import-and-commit"])
+    result = cli_runner.invoke(cli, ["connect", "sync", "-i"])
     assert result.exit_code == -1
     output = result.stdout.replace("\n", "") + result.stderr.replace("\n", "")
     assert "syncing transactions and exporting data" in output
