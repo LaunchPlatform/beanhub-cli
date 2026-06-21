@@ -150,7 +150,7 @@ wheels = [
 
 [[package]]
 name = "beanhub-cli"
-version = "3.2.1"
+version = "3.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "attrs" },
