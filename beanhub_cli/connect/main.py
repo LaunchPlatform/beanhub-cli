@@ -28,6 +28,7 @@ from ..internal_api.api.connect import create_dump_request
 from ..internal_api.api.connect import create_sync_batch
 from ..internal_api.api.connect import get_dump_request
 from ..internal_api.api.connect import get_sync_batch
+from ..internal_api.api.repo import list_repo
 from ..internal_api.models import CreateDumpRequestRequest
 from ..internal_api.models import CreateDumpRequestResponse
 from ..internal_api.models import CreateSyncBatchRequest
@@ -61,9 +62,8 @@ TERMINAL_BATCH_STATES = frozenset(
         SyncBatchState.SYNC_COMPLETE,
     ]
 )
-SUCCESS_SYNC_STATES = frozenset(
+TERMINAL_SUCCESS_SYNC_STATES = frozenset(
     [
-        PlaidItemSyncState.SYNC_COMPLETE,
         PlaidItemSyncState.SYNC_COMPLETE_ONLY,
         PlaidItemSyncState.IMPORT_COMPLETE,
         PlaidItemSyncState.IMPORT_COMPLETE_NO_CHANGES,
@@ -88,8 +88,6 @@ SUCCESS_BATCH_STATES = frozenset(
 def _get_repository_type(
     client, username: str, repo_name: str
 ) -> RepositoryType | None:
-    from ..internal_api.api.repo import list_repo
-
     resp = list_repo.sync(client=client)
     for repository in resp.repositories:
         if repository.username == username and repository.name == repo_name:
@@ -118,7 +116,11 @@ def _sync_error_message(error_message: str | None | Unset) -> str:
 
 def _classify_syncs(resp: GetSyncBatchResponse) -> tuple[list, list]:
     bad_terms = [sync for sync in resp.syncs if sync.state in BAD_TERMINAL_SYNC_STATES]
-    good_terms = [sync for sync in resp.syncs if sync.state in SUCCESS_SYNC_STATES]
+    good_terms = [
+        sync for sync in resp.syncs if sync.state in TERMINAL_SUCCESS_SYNC_STATES
+    ]
+    # SYNC_COMPLETE is not terminal on Git repos (import may still run), but items
+    # can remain in that state when a batch finishes (e.g. --import batch import).
     if resp.state in SUCCESS_BATCH_STATES:
         classified_ids = {id(sync) for sync in good_terms} | {
             id(sync) for sync in bad_terms
