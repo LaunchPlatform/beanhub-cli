@@ -8,6 +8,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient
 from ...client import Client
+from ...models.create_sync_batch_request import CreateSyncBatchRequest
 from ...models.create_sync_batch_response import CreateSyncBatchResponse
 from ...models.http_validation_error import HTTPValidationError
 from ...types import Response
@@ -16,12 +17,22 @@ from ...types import Response
 def _get_kwargs(
     username: str,
     repo_name: str,
+    *,
+    body: CreateSyncBatchRequest,
 ) -> dict[str, Any]:
+    headers: dict[str, Any] = {}
+
     _kwargs: dict[str, Any] = {
         "method": "post",
         "url": f"/v1/repos/{username}/{repo_name}/connect/sync_batches",
     }
 
+    _body = body.to_dict()
+
+    _kwargs["json"] = _body
+    headers["Content-Type"] = "application/json"
+
+    _kwargs["headers"] = headers
     return _kwargs
 
 
@@ -58,12 +69,14 @@ def sync_detailed(
     repo_name: str,
     *,
     client: AuthenticatedClient,
+    body: CreateSyncBatchRequest,
 ) -> Response[Union[CreateSyncBatchResponse, HTTPValidationError]]:
     """Create a sync batch
 
     Args:
         username (str):
         repo_name (str):
+        body (CreateSyncBatchRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -76,6 +89,7 @@ def sync_detailed(
     kwargs = _get_kwargs(
         username=username,
         repo_name=repo_name,
+        body=body,
     )
 
     response = client.get_httpx_client().request(
@@ -90,12 +104,14 @@ def sync(
     repo_name: str,
     *,
     client: AuthenticatedClient,
+    body: CreateSyncBatchRequest,
 ) -> Optional[Union[CreateSyncBatchResponse, HTTPValidationError]]:
     """Create a sync batch
 
     Args:
         username (str):
         repo_name (str):
+        body (CreateSyncBatchRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -109,6 +125,7 @@ def sync(
         username=username,
         repo_name=repo_name,
         client=client,
+        body=body,
     ).parsed
 
 
@@ -117,12 +134,14 @@ async def asyncio_detailed(
     repo_name: str,
     *,
     client: AuthenticatedClient,
+    body: CreateSyncBatchRequest,
 ) -> Response[Union[CreateSyncBatchResponse, HTTPValidationError]]:
     """Create a sync batch
 
     Args:
         username (str):
         repo_name (str):
+        body (CreateSyncBatchRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -135,6 +154,7 @@ async def asyncio_detailed(
     kwargs = _get_kwargs(
         username=username,
         repo_name=repo_name,
+        body=body,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -147,12 +167,14 @@ async def asyncio(
     repo_name: str,
     *,
     client: AuthenticatedClient,
+    body: CreateSyncBatchRequest,
 ) -> Optional[Union[CreateSyncBatchResponse, HTTPValidationError]]:
     """Create a sync batch
 
     Args:
         username (str):
         repo_name (str):
+        body (CreateSyncBatchRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -167,5 +189,6 @@ async def asyncio(
             username=username,
             repo_name=repo_name,
             client=client,
+            body=body,
         )
     ).parsed

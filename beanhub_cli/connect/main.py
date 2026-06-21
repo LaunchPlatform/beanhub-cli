@@ -5,6 +5,7 @@ import sys
 import tarfile
 import tempfile
 import time
+from collections.abc import Callable
 
 import click
 import httpx
@@ -27,14 +28,18 @@ from ..internal_api.api.connect import create_dump_request
 from ..internal_api.api.connect import create_sync_batch
 from ..internal_api.api.connect import get_dump_request
 from ..internal_api.api.connect import get_sync_batch
+from ..internal_api.api.repo import list_repo
 from ..internal_api.models import CreateDumpRequestRequest
 from ..internal_api.models import CreateDumpRequestResponse
+from ..internal_api.models import CreateSyncBatchRequest
 from ..internal_api.models import CreateSyncBatchResponse
 from ..internal_api.models import DumpRequestState
 from ..internal_api.models import GetDumpRequestResponse
 from ..internal_api.models import GetSyncBatchResponse
 from ..internal_api.models import HTTPValidationError
 from ..internal_api.models import PlaidItemSyncState
+from ..internal_api.models import RepositoryType
+from ..internal_api.models import SyncBatchState
 from .cli import cli
 
 logger = logging.getLogger(__name__)
@@ -43,22 +48,101 @@ TABLE_HEADER_STYLE = "yellow"
 TABLE_COLUMN_STYLE = "cyan"
 SPOOLED_FILE_MAX_SIZE = 1024 * 1024 * 5
 
+CONNECT_ONLY_IMPORT_AND_COMMIT_ERROR = (
+    "Import and commit is only available for Git repositories. "
+    "Connect repositories only support syncing transactions and "
+    "exporting data."
+)
+TERMINAL_BATCH_STATES = frozenset(
+    [
+        SyncBatchState.IMPORT_COMPLETE,
+        SyncBatchState.IMPORT_COMPLETE_NO_CHANGES,
+        SyncBatchState.IMPORT_FAILED,
+        SyncBatchState.SYNC_COMPLETE,
+    ]
+)
+TERMINAL_SUCCESS_SYNC_STATES = frozenset(
+    [
+        PlaidItemSyncState.SYNC_COMPLETE_ONLY,
+        PlaidItemSyncState.IMPORT_COMPLETE,
+        PlaidItemSyncState.IMPORT_COMPLETE_NO_CHANGES,
+    ]
+)
+BAD_TERMINAL_SYNC_STATES = frozenset(
+    [
+        PlaidItemSyncState.IMPORT_FAILED,
+        PlaidItemSyncState.SYNC_FAILED,
+        PlaidItemSyncState.SKIPPED,
+    ]
+)
+SUCCESS_BATCH_STATES = frozenset(
+    [
+        SyncBatchState.SYNC_COMPLETE,
+        SyncBatchState.IMPORT_COMPLETE,
+        SyncBatchState.IMPORT_COMPLETE_NO_CHANGES,
+    ]
+)
 
-def run_sync(env: Environment, config: AuthConfig):
-    GOOD_TERMINAL_SYNC_STATES = frozenset(
-        [
-            PlaidItemSyncState.IMPORT_COMPLETE,
-            PlaidItemSyncState.IMPORT_COMPLETE_NO_CHANGES,
-        ]
-    )
-    BAD_TERMINAL_SYNC_STATES = frozenset(
-        [
-            PlaidItemSyncState.IMPORT_FAILED,
-            PlaidItemSyncState.SYNC_FAILED,
-            PlaidItemSyncState.SKIPPED,
-        ]
-    )
 
+def _get_repository_type(
+    client, username: str, repo_name: str
+) -> RepositoryType | None:
+    resp = list_repo.sync(client=client)
+    for repository in resp.repositories:
+        if repository.username == username and repository.name == repo_name:
+            return repository.type_
+    return None
+
+
+def _format_validation_error(resp: HTTPValidationError) -> str:
+    error = resp.additional_properties.get("error")
+    if error is not None:
+        return str(error)
+    if resp.detail:
+        return str(resp.detail)
+    return "Unknown validation error"
+
+
+def _classify_syncs(resp: GetSyncBatchResponse) -> tuple[list, list]:
+    bad_terms = [sync for sync in resp.syncs if sync.state in BAD_TERMINAL_SYNC_STATES]
+    good_terms = [
+        sync for sync in resp.syncs if sync.state in TERMINAL_SUCCESS_SYNC_STATES
+    ]
+    # SYNC_COMPLETE is not terminal on Git repos (import may still run), but items
+    # can remain in that state when a batch finishes (e.g. --import batch import).
+    if resp.state in SUCCESS_BATCH_STATES:
+        classified_ids = {id(sync) for sync in good_terms} | {
+            id(sync) for sync in bad_terms
+        }
+        good_terms.extend(sync for sync in resp.syncs if id(sync) not in classified_ids)
+    return good_terms, bad_terms
+
+
+def _print_sync_table(
+    *,
+    title: str,
+    syncs: list,
+    columns: list[tuple[str, Callable[..., str]]],
+):
+    if not syncs:
+        return
+
+    table = Table(
+        title=title,
+        box=box.SIMPLE,
+        header_style=TABLE_HEADER_STYLE,
+        expand=True,
+    )
+    for column_name, _ in columns:
+        table.add_column(column_name, style=TABLE_COLUMN_STYLE)
+    for sync in syncs:
+        table.add_row(
+            *[escape(formatter(sync)) for _, formatter in columns],
+        )
+    rich.print(Padding(table, (1, 0, 0, 4)))
+
+
+def run_sync(env: Environment, config: AuthConfig, import_and_commit: bool = False):
     logger.info(
         "Running sync batch for repo [green]%s[/]",
         config.repo,
@@ -67,13 +151,22 @@ def run_sync(env: Environment, config: AuthConfig):
 
     with make_auth_client(base_url=env.api_base_url, token=config.token) as client:
         client.raise_on_unexpected_status = True
+        if import_and_commit:
+            repo_type = _get_repository_type(client, config.username, config.repo)
+            if repo_type == RepositoryType.CONNECT:
+                logger.error(CONNECT_ONLY_IMPORT_AND_COMMIT_ERROR)
+                sys.exit(-1)
+
         resp: CreateSyncBatchResponse = create_sync_batch.sync(
-            username=config.username, repo_name=config.repo, client=client
+            username=config.username,
+            repo_name=config.repo,
+            client=client,
+            body=CreateSyncBatchRequest(import_and_commit=import_and_commit),
         )
         if isinstance(resp, HTTPValidationError):
             logger.error(
                 "Failed to create sync batch with error: %s",
-                resp.additional_properties.get("error", resp.detail),
+                _format_validation_error(resp),
             )
             sys.exit(-1)
         batch_id = resp.id
@@ -91,60 +184,51 @@ def run_sync(env: Environment, config: AuthConfig):
                 sync_batch_id=batch_id,
                 client=client,
             )
-            total = len(resp.syncs)
-            good_terms = list(
-                sync
-                for sync in resp.syncs
-                if PlaidItemSyncState[sync.state.value] in GOOD_TERMINAL_SYNC_STATES
-            )
-            bad_terms = list(
-                sync for sync in resp.syncs if sync.state in BAD_TERMINAL_SYNC_STATES
-            )
-            progress = len(good_terms) + len(bad_terms)
-            if progress >= total:
+            if resp.state in TERMINAL_BATCH_STATES:
                 break
-            else:
+            logger.info(
+                "Batch state is [green]%s[/], still processing ...",
+                resp.state.value,
+                extra={"markup": True, "highlighter": None},
+            )
+
+        if import_and_commit:
+            if resp.state == SyncBatchState.IMPORT_FAILED:
+                logger.error(
+                    "Batch import and commit failed with error: %s",
+                    resp.error_message,
+                )
+                sys.exit(-1)
+            if resp.state in (
+                SyncBatchState.IMPORT_COMPLETE,
+                SyncBatchState.IMPORT_COMPLETE_NO_CHANGES,
+            ):
                 logger.info(
-                    "Still processing, [green]%s[/] out of [green]%s[/]",
-                    progress,
-                    total,
+                    "Batch import and commit finished with state [green]%s[/]",
+                    resp.state.value,
                     extra={"markup": True, "highlighter": None},
                 )
-        table = Table(
-            title="Sync finished successfully",
-            box=box.SIMPLE,
-            header_style=TABLE_HEADER_STYLE,
-            expand=True,
-        )
-        table.add_column("Id", style=TABLE_COLUMN_STYLE)
-        table.add_column("Institution", style=TABLE_COLUMN_STYLE)
-        table.add_column("State", style=TABLE_COLUMN_STYLE)
-        for sync in good_terms:
-            table.add_row(
-                escape(sync.id),
-                escape(sync.item.institution_name),
-                escape(sync.state),
-            )
-        rich.print(Padding(table, (1, 0, 0, 4)))
 
-        table = Table(
-            title="Sync finished with error",
-            box=box.SIMPLE,
-            header_style=TABLE_HEADER_STYLE,
-            expand=True,
+        good_terms, bad_terms = _classify_syncs(resp)
+        _print_sync_table(
+            title="Sync finished successfully",
+            syncs=good_terms,
+            columns=[
+                ("Id", lambda sync: sync.id),
+                ("Institution", lambda sync: sync.item.institution_name),
+                ("State", lambda sync: sync.state),
+            ],
         )
-        table.add_column("Id", style=TABLE_COLUMN_STYLE)
-        table.add_column("Institution", style=TABLE_COLUMN_STYLE)
-        table.add_column("State", style=TABLE_COLUMN_STYLE)
-        table.add_column("Error", style=TABLE_COLUMN_STYLE)
-        for sync in bad_terms:
-            table.add_row(
-                escape(sync.id),
-                escape(sync.item.institution_name),
-                escape(sync.state),
-                escape(sync.error_message),
-            )
-        rich.print(Padding(table, (1, 0, 0, 4)))
+        _print_sync_table(
+            title="Sync finished with error",
+            syncs=bad_terms,
+            columns=[
+                ("Id", lambda sync: sync.id),
+                ("Institution", lambda sync: sync.item.institution_name),
+                ("State", lambda sync: sync.state),
+                ("Error", lambda sync: sync.error_message or ""),
+            ],
+        )
 
 
 @cli.command(help="Sync transactions for all BeanHub Connect banks")
@@ -154,11 +238,22 @@ def run_sync(env: Environment, config: AuthConfig):
     type=str,
     help='Which repository to run sync on, in "<username>/<repo_name>" format',
 )
+@click.option(
+    "-i",
+    "--import",
+    "import_",
+    is_flag=True,
+    help=(
+        "After syncing all banks, run BeanHub Import and commit the changes to "
+        "the Git repository. Only available for Git repositories; not supported "
+        "for Connect-only repositories, which have no Git repo."
+    ),
+)
 @pass_env
 @handle_api_exception(logger)
-def sync(env: Environment, repo: str | None):
+def sync(env: Environment, repo: str | None, import_: bool):
     config = ensure_auth_config(api_base_url=env.api_base_url, repo=repo)
-    run_sync(env, config)
+    run_sync(env, config, import_and_commit=import_)
     env.logger.info("done")
 
 
