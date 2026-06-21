@@ -248,7 +248,9 @@ def run_sync(env: Environment, config: AuthConfig, import_and_commit: bool = Fal
     help='Which repository to run sync on, in "<username>/<repo_name>" format',
 )
 @click.option(
-    "--import-and-commit",
+    "-i",
+    "--import",
+    "import_",
     is_flag=True,
     help=(
         "After syncing all banks, run BeanHub Import and commit the changes to "
@@ -258,9 +260,9 @@ def run_sync(env: Environment, config: AuthConfig, import_and_commit: bool = Fal
 )
 @pass_env
 @handle_api_exception(logger)
-def sync(env: Environment, repo: str | None, import_and_commit: bool):
+def sync(env: Environment, repo: str | None, import_: bool):
     config = ensure_auth_config(api_base_url=env.api_base_url, repo=repo)
-    run_sync(env, config, import_and_commit=import_and_commit)
+    run_sync(env, config, import_and_commit=import_)
     env.logger.info("done")
 
 
