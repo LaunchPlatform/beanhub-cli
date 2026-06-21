@@ -194,14 +194,7 @@ def run_sync(env: Environment, config: AuthConfig, import_and_commit: bool = Fal
                 client=client,
             )
             if resp.state in TERMINAL_BATCH_STATES:
-                if resp.syncs or resp.state == SyncBatchState.IMPORT_FAILED:
-                    break
-                logger.info(
-                    "Batch state is [green]%s[/] but sync details are not ready yet, still waiting ...",
-                    resp.state.value,
-                    extra={"markup": True, "highlighter": None},
-                )
-                continue
+                break
             logger.info(
                 "Batch state is [green]%s[/], still processing ...",
                 resp.state.value,
