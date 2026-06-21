@@ -5,6 +5,7 @@ import sys
 import tarfile
 import tempfile
 import time
+from collections.abc import Callable
 
 import click
 import httpx
@@ -38,6 +39,7 @@ from ..internal_api.models import HTTPValidationError
 from ..internal_api.models import PlaidItemSyncState
 from ..internal_api.models import RepositoryType
 from ..internal_api.models import SyncBatchState
+from ..internal_api.types import Unset
 from .cli import cli
 
 logger = logging.getLogger(__name__)
@@ -59,8 +61,10 @@ TERMINAL_BATCH_STATES = frozenset(
         SyncBatchState.SYNC_COMPLETE,
     ]
 )
-GOOD_TERMINAL_SYNC_STATES = frozenset(
+SUCCESS_SYNC_STATES = frozenset(
     [
+        PlaidItemSyncState.SYNC_COMPLETE,
+        PlaidItemSyncState.SYNC_COMPLETE_ONLY,
         PlaidItemSyncState.IMPORT_COMPLETE,
         PlaidItemSyncState.IMPORT_COMPLETE_NO_CHANGES,
     ]
@@ -72,12 +76,11 @@ BAD_TERMINAL_SYNC_STATES = frozenset(
         PlaidItemSyncState.SKIPPED,
     ]
 )
-IMPORT_AND_COMMIT_GOOD_SYNC_STATES = frozenset(
+SUCCESS_BATCH_STATES = frozenset(
     [
-        PlaidItemSyncState.SYNC_COMPLETE,
-        PlaidItemSyncState.SYNC_COMPLETE_ONLY,
-        PlaidItemSyncState.IMPORT_COMPLETE,
-        PlaidItemSyncState.IMPORT_COMPLETE_NO_CHANGES,
+        SyncBatchState.SYNC_COMPLETE,
+        SyncBatchState.IMPORT_COMPLETE,
+        SyncBatchState.IMPORT_COMPLETE_NO_CHANGES,
     ]
 )
 
@@ -101,6 +104,51 @@ def _format_validation_error(resp: HTTPValidationError) -> str:
     if resp.detail:
         return str(resp.detail)
     return "Unknown validation error"
+
+
+def _sync_state_label(state: PlaidItemSyncState) -> str:
+    return state.value
+
+
+def _sync_error_message(error_message: str | None | Unset) -> str:
+    if isinstance(error_message, Unset) or error_message is None:
+        return ""
+    return error_message
+
+
+def _classify_syncs(resp: GetSyncBatchResponse) -> tuple[list, list]:
+    bad_terms = [sync for sync in resp.syncs if sync.state in BAD_TERMINAL_SYNC_STATES]
+    good_terms = [sync for sync in resp.syncs if sync.state in SUCCESS_SYNC_STATES]
+    if resp.state in SUCCESS_BATCH_STATES:
+        classified_ids = {id(sync) for sync in good_terms} | {
+            id(sync) for sync in bad_terms
+        }
+        good_terms.extend(sync for sync in resp.syncs if id(sync) not in classified_ids)
+    return good_terms, bad_terms
+
+
+def _print_sync_table(
+    *,
+    title: str,
+    syncs: list,
+    columns: list[tuple[str, Callable[..., str]]],
+):
+    if not syncs:
+        return
+
+    table = Table(
+        title=title,
+        box=box.SIMPLE,
+        header_style=TABLE_HEADER_STYLE,
+        expand=True,
+    )
+    for column_name, _ in columns:
+        table.add_column(column_name, style=TABLE_COLUMN_STYLE)
+    for sync in syncs:
+        table.add_row(
+            *[escape(formatter(sync)) for _, formatter in columns],
+        )
+    rich.print(Padding(table, (1, 0, 0, 4)))
 
 
 def run_sync(env: Environment, config: AuthConfig, import_and_commit: bool = False):
@@ -146,7 +194,14 @@ def run_sync(env: Environment, config: AuthConfig, import_and_commit: bool = Fal
                 client=client,
             )
             if resp.state in TERMINAL_BATCH_STATES:
-                break
+                if resp.syncs or resp.state == SyncBatchState.IMPORT_FAILED:
+                    break
+                logger.info(
+                    "Batch state is [green]%s[/] but sync details are not ready yet, still waiting ...",
+                    resp.state.value,
+                    extra={"markup": True, "highlighter": None},
+                )
+                continue
             logger.info(
                 "Batch state is [green]%s[/], still processing ...",
                 resp.state.value,
@@ -169,49 +224,27 @@ def run_sync(env: Environment, config: AuthConfig, import_and_commit: bool = Fal
                     resp.state.value,
                     extra={"markup": True, "highlighter": None},
                 )
-            good_sync_states = IMPORT_AND_COMMIT_GOOD_SYNC_STATES
-        else:
-            good_sync_states = GOOD_TERMINAL_SYNC_STATES
 
-        good_terms = list(sync for sync in resp.syncs if sync.state in good_sync_states)
-        bad_terms = list(
-            sync for sync in resp.syncs if sync.state in BAD_TERMINAL_SYNC_STATES
-        )
-        table = Table(
+        good_terms, bad_terms = _classify_syncs(resp)
+        _print_sync_table(
             title="Sync finished successfully",
-            box=box.SIMPLE,
-            header_style=TABLE_HEADER_STYLE,
-            expand=True,
+            syncs=good_terms,
+            columns=[
+                ("Id", lambda sync: sync.id),
+                ("Institution", lambda sync: sync.item.institution_name),
+                ("State", lambda sync: _sync_state_label(sync.state)),
+            ],
         )
-        table.add_column("Id", style=TABLE_COLUMN_STYLE)
-        table.add_column("Institution", style=TABLE_COLUMN_STYLE)
-        table.add_column("State", style=TABLE_COLUMN_STYLE)
-        for sync in good_terms:
-            table.add_row(
-                escape(sync.id),
-                escape(sync.item.institution_name),
-                escape(sync.state),
-            )
-        rich.print(Padding(table, (1, 0, 0, 4)))
-
-        table = Table(
+        _print_sync_table(
             title="Sync finished with error",
-            box=box.SIMPLE,
-            header_style=TABLE_HEADER_STYLE,
-            expand=True,
+            syncs=bad_terms,
+            columns=[
+                ("Id", lambda sync: sync.id),
+                ("Institution", lambda sync: sync.item.institution_name),
+                ("State", lambda sync: _sync_state_label(sync.state)),
+                ("Error", lambda sync: _sync_error_message(sync.error_message)),
+            ],
         )
-        table.add_column("Id", style=TABLE_COLUMN_STYLE)
-        table.add_column("Institution", style=TABLE_COLUMN_STYLE)
-        table.add_column("State", style=TABLE_COLUMN_STYLE)
-        table.add_column("Error", style=TABLE_COLUMN_STYLE)
-        for sync in bad_terms:
-            table.add_row(
-                escape(sync.id),
-                escape(sync.item.institution_name),
-                escape(sync.state),
-                escape(sync.error_message),
-            )
-        rich.print(Padding(table, (1, 0, 0, 4)))
 
 
 @cli.command(help="Sync transactions for all BeanHub Connect banks")

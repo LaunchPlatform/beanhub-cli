@@ -137,6 +137,110 @@ def test_sync(
     cli_runner.mix_stderr = False
     result = cli_runner.invoke(cli, ["connect", "sync"])
     assert result.exit_code == 0
+    output = result.stdout.replace("\n", "") + result.stderr.replace("\n", "")
+    assert "Chase" in output
+    assert "IMPORT_COMPLETE" in output
+
+
+def test_sync_shows_sync_complete_items(
+    cli_runner: CliRunner,
+    mock_config: Config,
+    httpx_mock: HTTPXMock,
+):
+    batch_id = uuid.uuid4()
+    httpx_mock.add_response(
+        url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches",
+        method="POST",
+        status_code=201,
+        json=dict(id=str(batch_id)),
+        match_headers={"access-token": mock_config.access_token.token},
+    )
+    httpx_mock.add_response(
+        url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches/{batch_id}",
+        method="GET",
+        status_code=200,
+        json=_sync_batch_payload(
+            batch_id,
+            state="SYNC_COMPLETE",
+            all_syncs_succeeded=True,
+            syncs=[
+                dict(
+                    id="5929e965-e95b-4b85-b3af-42131bdcd50a",
+                    state="SYNC_COMPLETE",
+                    item=dict(
+                        id="MOCK_ITEM0",
+                        institution_name="Capital One",
+                    ),
+                ),
+                dict(
+                    id="2dc508ad-d65c-4e8c-bf9b-b2d9f738e639",
+                    state="SYNC_COMPLETE_ONLY",
+                    item=dict(
+                        id="MOCK_ITEM1",
+                        institution_name="Citibank Online",
+                    ),
+                ),
+            ],
+        ),
+        match_headers={"access-token": mock_config.access_token.token},
+    )
+    cli_runner.mix_stderr = False
+    result = cli_runner.invoke(cli, ["connect", "sync"])
+    assert result.exit_code == 0
+    output = result.stdout.replace("\n", "") + result.stderr.replace("\n", "")
+    assert "Capital One" in output
+    assert "Citibank Online" in output
+    assert "SYNC_COMPLETE" in output
+
+
+def test_sync_sends_cli_version_header(
+    cli_runner: CliRunner,
+    mock_config: Config,
+    httpx_mock: HTTPXMock,
+):
+    from importlib.metadata import version
+
+    from beanhub_cli.http_client import CLIENT_VERSION_HEADER
+
+    batch_id = uuid.uuid4()
+    cli_version = version("beanhub-cli")
+    httpx_mock.add_response(
+        url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches",
+        method="POST",
+        status_code=201,
+        json=dict(id=str(batch_id)),
+        match_headers={
+            "access-token": mock_config.access_token.token,
+            CLIENT_VERSION_HEADER: cli_version,
+        },
+    )
+    httpx_mock.add_response(
+        url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches/{batch_id}",
+        method="GET",
+        status_code=200,
+        json=_sync_batch_payload(
+            batch_id,
+            state="SYNC_COMPLETE",
+            all_syncs_succeeded=True,
+            syncs=[
+                dict(
+                    id="SYNC0",
+                    state="SYNC_COMPLETE",
+                    item=dict(
+                        id="MOCK_ITEM0",
+                        institution_name="Chase",
+                    ),
+                ),
+            ],
+        ),
+        match_headers={
+            "access-token": mock_config.access_token.token,
+            CLIENT_VERSION_HEADER: cli_version,
+        },
+    )
+    cli_runner.mix_stderr = False
+    result = cli_runner.invoke(cli, ["connect", "sync"])
+    assert result.exit_code == 0
 
 
 def test_sync_with_skipped_state(
