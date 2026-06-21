@@ -40,7 +40,6 @@ from ..internal_api.models import HTTPValidationError
 from ..internal_api.models import PlaidItemSyncState
 from ..internal_api.models import RepositoryType
 from ..internal_api.models import SyncBatchState
-from ..internal_api.types import Unset
 from .cli import cli
 
 logger = logging.getLogger(__name__)
@@ -102,16 +101,6 @@ def _format_validation_error(resp: HTTPValidationError) -> str:
     if resp.detail:
         return str(resp.detail)
     return "Unknown validation error"
-
-
-def _sync_state_label(state: PlaidItemSyncState) -> str:
-    return state.value
-
-
-def _sync_error_message(error_message: str | None | Unset) -> str:
-    if isinstance(error_message, Unset) or error_message is None:
-        return ""
-    return error_message
 
 
 def _classify_syncs(resp: GetSyncBatchResponse) -> tuple[list, list]:
@@ -227,7 +216,7 @@ def run_sync(env: Environment, config: AuthConfig, import_and_commit: bool = Fal
             columns=[
                 ("Id", lambda sync: sync.id),
                 ("Institution", lambda sync: sync.item.institution_name),
-                ("State", lambda sync: _sync_state_label(sync.state)),
+                ("State", lambda sync: sync.state),
             ],
         )
         _print_sync_table(
@@ -236,8 +225,8 @@ def run_sync(env: Environment, config: AuthConfig, import_and_commit: bool = Fal
             columns=[
                 ("Id", lambda sync: sync.id),
                 ("Institution", lambda sync: sync.item.institution_name),
-                ("State", lambda sync: _sync_state_label(sync.state)),
-                ("Error", lambda sync: _sync_error_message(sync.error_message)),
+                ("State", lambda sync: sync.state),
+                ("Error", lambda sync: sync.error_message or ""),
             ],
         )
 
