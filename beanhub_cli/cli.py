@@ -2,7 +2,7 @@ import logging
 import os
 
 import click
-from rich.logging import Console
+from rich.console import Console
 from rich.logging import RichHandler
 
 from .aliase import AliasedGroup

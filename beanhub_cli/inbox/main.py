@@ -36,7 +36,7 @@ from jinja2.sandbox import SandboxedEnvironment
 from nacl.encoding import URLSafeBase64Encoder
 from nacl.public import PrivateKey
 from nacl.public import SealedBox
-from rich.json import JSONHighlighter
+from rich.highlighter import JSONHighlighter
 from rich.live import Live
 from rich.panel import Panel
 
