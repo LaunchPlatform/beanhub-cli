@@ -152,7 +152,7 @@ def test_dump(
             ],
             cursor="MOCK_CURSOR0",
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/inbox/emails?cursor=MOCK_CURSOR0",
@@ -164,7 +164,7 @@ def test_dump(
             ],
             cursor="MOCK_CURSOR1",
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/inbox/emails?cursor=MOCK_CURSOR1",
@@ -173,7 +173,7 @@ def test_dump(
         json=dict(
             emails=[],
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/inbox/dumps",
@@ -191,7 +191,7 @@ def test_dump(
                 emails[4].id,
             ],
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/inbox/dumps/{dump_id}",
@@ -201,7 +201,7 @@ def test_dump(
             id=str(dump_id),
             state="PROCESSING",
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/inbox/dumps/{dump_id}",
@@ -213,7 +213,7 @@ def test_dump(
             download_url=mock_download_url,
             encryption_key=encryption_key,
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=mock_download_url,
@@ -251,7 +251,7 @@ def test_dump_without_emails(
         json=dict(
             emails=[],
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
 
     cli_runner.mix_stderr = False

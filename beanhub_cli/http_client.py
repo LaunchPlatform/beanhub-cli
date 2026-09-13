@@ -32,8 +32,6 @@ def make_client(base_url: str) -> Client:
 def make_auth_client(base_url: str, token: str) -> AuthenticatedClient:
     return AuthenticatedClient(
         base_url=base_url,
-        prefix="",
-        auth_header_name="access-token",
         token=token,
         headers=get_client_headers(),
     )

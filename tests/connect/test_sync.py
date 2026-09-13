@@ -59,7 +59,7 @@ def _mock_list_repo(
                 )
             ]
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
 
 
@@ -76,7 +76,7 @@ def test_sync(
         json=dict(
             id=str(batch_id),
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches/{batch_id}",
@@ -103,7 +103,7 @@ def test_sync(
                 ),
             ],
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches/{batch_id}",
@@ -132,7 +132,7 @@ def test_sync(
                 ),
             ],
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     cli_runner.mix_stderr = False
     result = cli_runner.invoke(cli, ["connect", "sync"])
@@ -153,7 +153,7 @@ def test_sync_shows_sync_complete_items(
         method="POST",
         status_code=201,
         json=dict(id=str(batch_id)),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches/{batch_id}",
@@ -182,7 +182,7 @@ def test_sync_shows_sync_complete_items(
                 ),
             ],
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     cli_runner.mix_stderr = False
     result = cli_runner.invoke(cli, ["connect", "sync"])
@@ -210,7 +210,7 @@ def test_sync_sends_cli_version_header(
         status_code=201,
         json=dict(id=str(batch_id)),
         match_headers={
-            "access-token": mock_config.access_token.token,
+            "Authorization": f"Bearer {mock_config.access_token.token}",
             CLIENT_VERSION_HEADER: cli_version,
         },
     )
@@ -234,7 +234,7 @@ def test_sync_sends_cli_version_header(
             ],
         ),
         match_headers={
-            "access-token": mock_config.access_token.token,
+            "Authorization": f"Bearer {mock_config.access_token.token}",
             CLIENT_VERSION_HEADER: cli_version,
         },
     )
@@ -256,7 +256,7 @@ def test_sync_with_skipped_state(
         json=dict(
             id=str(batch_id),
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches/{batch_id}",
@@ -283,7 +283,7 @@ def test_sync_with_skipped_state(
                 ),
             ],
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches/{batch_id}",
@@ -313,7 +313,7 @@ def test_sync_with_skipped_state(
                 ),
             ],
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     cli_runner.mix_stderr = False
     result = cli_runner.invoke(cli, ["connect", "sync"])
@@ -335,7 +335,7 @@ def test_sync_with_import_and_commit(
         json=dict(
             id=str(batch_id),
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
         match_json={"import_and_commit": True},
     )
     httpx_mock.add_response(
@@ -357,7 +357,7 @@ def test_sync_with_import_and_commit(
                 ),
             ],
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches/{batch_id}",
@@ -378,7 +378,7 @@ def test_sync_with_import_and_commit(
                 ),
             ],
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches/{batch_id}",
@@ -400,7 +400,7 @@ def test_sync_with_import_and_commit(
                 ),
             ],
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     cli_runner.mix_stderr = False
     result = cli_runner.invoke(cli, ["connect", "sync", "-i"])
@@ -423,7 +423,7 @@ def test_sync_with_import_and_commit_failed(
         json=dict(
             id=str(batch_id),
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
         match_json={"import_and_commit": True},
     )
     httpx_mock.add_response(
@@ -463,7 +463,7 @@ def test_sync_with_import_and_commit_failed(
                 ),
             ],
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     cli_runner.mix_stderr = False
     result = cli_runner.invoke(cli, ["connect", "sync", "-i"])
@@ -496,7 +496,7 @@ def test_sync_with_import_and_commit_rejected_by_api(
         method="GET",
         status_code=200,
         json=dict(repositories=[]),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
     )
     httpx_mock.add_response(
         url=f"https://api.beanhub.io/v1/repos/{mock_config.repo.default}/connect/sync_batches",
@@ -509,7 +509,7 @@ def test_sync_with_import_and_commit_rejected_by_api(
                 "exporting data."
             ),
         ),
-        match_headers={"access-token": mock_config.access_token.token},
+        match_headers={"Authorization": f"Bearer {mock_config.access_token.token}"},
         match_json={"import_and_commit": True},
     )
     cli_runner.mix_stderr = False
