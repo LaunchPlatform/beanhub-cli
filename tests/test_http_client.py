@@ -30,7 +30,7 @@ def test_make_auth_client_includes_version_headers():
     client = make_auth_client(base_url="https://api.beanhub.io", token="test-token")
     with client:
         httpx_client = client.get_httpx_client()
-        assert httpx_client.headers["access-token"] == "test-token"
+        assert httpx_client.headers["Authorization"] == "Bearer test-token"
         assert httpx_client.headers["User-Agent"] == get_client_headers()["User-Agent"]
         assert (
             httpx_client.headers[CLIENT_VERSION_HEADER]

@@ -150,7 +150,7 @@ def test_ensure_auth_config_uses_git_remote_when_active(
                 )
             ]
         ),
-        match_headers={"access-token": "test-token"},
+        match_headers={"Authorization": "Bearer test-token"},
     )
 
     with switch_cwd(repo_root):
@@ -187,7 +187,7 @@ def test_ensure_auth_config_falls_back_to_single_active_repo(
                 )
             ]
         ),
-        match_headers={"access-token": "test-token"},
+        match_headers={"Authorization": "Bearer test-token"},
     )
 
     with switch_cwd(repo_root):
