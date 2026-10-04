@@ -19,7 +19,9 @@ If your local environment doesn't allow BeanHub-CLI to open the page in the brow
 Once the page is present, please compare the authentication code shown by the command line tool and the one shown on the website to ensure they are identical before granting access.
 You can change the scope of access grant for your login session when creating it or change it later on the [BeanHub Access Token management page](https://app.beanhub.io/access-tokens/).
 
-After logging in successfully, BeanHub-CLI will create a configuration file at `<your home folder>/.beanhub/config.toml` containing the corresponding access token and default repository it is.
-Currently, we keep the access token as plaintext in the configuration file.
-We may integrate the keychain service provided by your operation system for better security in the future.
-There's no command for logging out right now, but you can delete the access token in the [BeanHub Access Token management page](https://app.beanhub.io/access-tokens/) and then delete the config file manually.
+After logging in successfully, BeanHub-CLI writes a configuration file at `<your home folder>/.beanhub/config.toml`.
+The file stores the access token and, when you set one, your default repository.
+The access token is plaintext in that file.
+We may integrate the keychain service provided by your operating system for better security in the future.
+
+If you are already logged in, `bh login` stops. Run [`bh logout`](./logout.md) to remove the saved token, then log in again.

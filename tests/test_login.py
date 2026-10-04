@@ -87,3 +87,52 @@ def test_already_login(
     result = cli_runner.invoke(cli, ["login"])
     assert result.exit_code == -1
     assert "Already logged in" in result.stderr
+    assert "bh logout" in result.stderr
+
+
+def test_logout_keeps_other_settings(
+    cli_runner: CliRunner,
+    mock_config: Config,
+):
+    token = mock_config.access_token.token
+    cli_runner.mix_stderr = False
+    result = cli_runner.invoke(cli, ["logout"])
+    assert result.exit_code == 0
+    assert "Logged out" in result.stderr
+
+    config = load_config()
+    assert config is not None
+    assert config.access_token is None
+    assert config.repo is not None
+    assert config.repo.default == mock_config.repo.default
+    saved = pathlib.Path.home().joinpath(".beanhub", "config.toml").read_text()
+    assert token not in saved
+
+
+@pytest.mark.parametrize("config_username", [None])
+@pytest.mark.parametrize("config_repo_name", [None])
+def test_logout_deletes_config_when_it_only_holds_the_token(
+    cli_runner: CliRunner,
+    mock_home: pathlib.Path,
+    mock_config: Config,
+):
+    _ = mock_config
+    config_path = mock_home / ".beanhub" / "config.toml"
+    assert config_path.exists()
+    cli_runner.mix_stderr = False
+    result = cli_runner.invoke(cli, ["logout"])
+    assert result.exit_code == 0
+    assert not config_path.exists()
+    assert load_config() is None
+
+
+def test_logout_when_not_logged_in(
+    cli_runner: CliRunner,
+    mock_home: pathlib.Path,
+):
+    _ = mock_home
+    cli_runner.mix_stderr = False
+    result = cli_runner.invoke(cli, ["logout"])
+    assert result.exit_code == 0
+    assert "Not logged in" in result.stderr
+    assert load_config() is None

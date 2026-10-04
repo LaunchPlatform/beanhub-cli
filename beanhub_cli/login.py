@@ -80,9 +80,8 @@ def main(env: Environment):
     config_path = get_config_path()
     config = load_config()
     if config is not None and config.access_token is not None:
-        # TODO: ask the user if they want to log out the original session first
         logger.error(
-            "Already logged in, if you want to login again, please delete the config file at %s first",
+            'Already logged in. Run "bh logout" to remove the saved access token at %s first',
             config_path,
         )
         sys.exit(-1)
@@ -91,3 +90,25 @@ def main(env: Environment):
     with make_client(base_url=env.api_base_url) as client:
         client.raise_on_unexpected_status = True
         run_login(client=client)
+
+
+@cli.command(name="logout", help="Log out of your BeanHub account")
+def logout():
+    # ponytail: clears the local token only. The API has no revoke-current-token
+    # route; delete the token at https://app.beanhub.io/access-tokens/ to revoke it.
+    config_path = get_config_path()
+    config = load_config()
+    if config is None or config.access_token is None:
+        logger.info("Not logged in")
+        return
+
+    config.access_token = None
+    if config.model_dump(exclude_none=True):
+        save_config(config)
+    elif config_path.exists():
+        config_path.unlink()
+    logger.info("Logged out. Removed the access token from %s", config_path)
+    logger.info(
+        "The token still works for Git and the API until you delete it at %s",
+        "https://app.beanhub.io/access-tokens/",
+    )
