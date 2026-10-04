@@ -24,4 +24,4 @@ The file stores the access token and, when you set one, your default repository.
 The access token is plaintext in that file.
 We may integrate the keychain service provided by your operating system for better security in the future.
 
-If you are already logged in, `bh login` stops. Run [`bh logout`](./logout.md) to remove the saved token, then log in again.
+If you are already logged in, `bh login` stops. Run [`bh logout`](./logout.md) to revoke that token and remove it from this computer, then log in again.
