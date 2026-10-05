@@ -142,7 +142,7 @@ def test_logout_deletes_config_when_it_only_holds_the_token(
     "status_code, message",
     [
         (401, "invalid"),
-        (404, "did not revoke"),
+        (404, "stops working"),
     ],
 )
 def test_logout_drops_local_token_when_revoke_cannot_succeed(

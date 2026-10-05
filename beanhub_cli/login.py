@@ -140,11 +140,10 @@ def logout(env: Environment):
             config_path,
         )
         return
-    # Older servers have no revoke route. Still drop the local copy.
     if resp.status_code == 404:
         _forget_local_token(config)
         logger.warning(
-            "Logged out on this computer, but this BeanHub server did not revoke the token. Delete it at %s",
+            "Logged out on this computer. Delete this token at %s so it stops working.",
             "https://app.beanhub.io/access-tokens/",
         )
         return
