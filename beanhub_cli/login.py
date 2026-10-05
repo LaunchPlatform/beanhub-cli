@@ -4,6 +4,8 @@ import sys
 import time
 import webbrowser
 
+import httpx
+
 from .api_helpers import handle_api_exception
 from .cli import cli
 from .config import AccessToken
@@ -13,6 +15,7 @@ from .config import load_config
 from .config import save_config
 from .environment import Environment
 from .environment import pass_env
+from .http_client import make_auth_client
 from .http_client import make_client
 from .internal_api.api.auth import create_auth_session
 from .internal_api.api.auth import poll_auth_session
@@ -80,9 +83,8 @@ def main(env: Environment):
     config_path = get_config_path()
     config = load_config()
     if config is not None and config.access_token is not None:
-        # TODO: ask the user if they want to log out the original session first
         logger.error(
-            "Already logged in, if you want to login again, please delete the config file at %s first",
+            'Already logged in. Run "bh logout" to remove the saved access token at %s first',
             config_path,
         )
         sys.exit(-1)
@@ -91,3 +93,63 @@ def main(env: Environment):
     with make_client(base_url=env.api_base_url) as client:
         client.raise_on_unexpected_status = True
         run_login(client=client)
+
+
+def _forget_local_token(config: Config):
+    config_path = get_config_path()
+    config.access_token = None
+    if config.model_dump(exclude_none=True):
+        save_config(config)
+    elif config_path.exists():
+        config_path.unlink()
+
+
+def _revoke_access_token(base_url: str, token: str) -> httpx.Response:
+    with make_auth_client(base_url=base_url, token=token) as client:
+        return client.get_httpx_client().request("DELETE", "/v1/auth/token")
+
+
+@cli.command(name="logout", help="Log out of your BeanHub account")
+@pass_env
+def logout(env: Environment):
+    config_path = get_config_path()
+    config = load_config()
+    if config is None or config.access_token is None:
+        logger.info("Not logged in")
+        return
+
+    try:
+        resp = _revoke_access_token(env.api_base_url, config.access_token.token)
+    except httpx.RequestError:
+        logger.error(
+            "Could not reach BeanHub to revoke the access token, so you are still logged in. Try again."
+        )
+        sys.exit(-1)
+
+    if resp.status_code == 204:
+        _forget_local_token(config)
+        logger.info(
+            "Logged out. Revoked the access token and removed it from %s",
+            config_path,
+        )
+        return
+    if resp.status_code == 401:
+        _forget_local_token(config)
+        logger.info(
+            "Logged out. The access token was already invalid. Removed it from %s",
+            config_path,
+        )
+        return
+    if resp.status_code == 404:
+        _forget_local_token(config)
+        logger.warning(
+            "Logged out on this computer. Delete this token at %s so it stops working.",
+            "https://app.beanhub.io/access-tokens/",
+        )
+        return
+
+    logger.error(
+        "Could not revoke the access token (HTTP %s), so you are still logged in. Try again.",
+        resp.status_code,
+    )
+    sys.exit(-1)

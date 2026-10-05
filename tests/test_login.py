@@ -87,3 +87,118 @@ def test_already_login(
     result = cli_runner.invoke(cli, ["login"])
     assert result.exit_code == -1
     assert "Already logged in" in result.stderr
+    assert "bh logout" in result.stderr
+
+
+def _mock_revoke(httpx_mock: HTTPXMock, token: str, status_code: int):
+    httpx_mock.add_response(
+        url="https://api.beanhub.io/v1/auth/token",
+        method="DELETE",
+        status_code=status_code,
+        match_headers={"access-token": token},
+    )
+
+
+def test_logout_keeps_other_settings(
+    cli_runner: CliRunner,
+    httpx_mock: HTTPXMock,
+    mock_config: Config,
+):
+    token = mock_config.access_token.token
+    _mock_revoke(httpx_mock, token, 204)
+    cli_runner.mix_stderr = False
+    result = cli_runner.invoke(cli, ["logout"])
+    assert result.exit_code == 0
+    assert "Revoked the access token" in result.stderr
+
+    config = load_config()
+    assert config is not None
+    assert config.access_token is None
+    assert config.repo is not None
+    assert config.repo.default == mock_config.repo.default
+    saved = pathlib.Path.home().joinpath(".beanhub", "config.toml").read_text()
+    assert token not in saved
+
+
+@pytest.mark.parametrize("config_username", [None])
+@pytest.mark.parametrize("config_repo_name", [None])
+def test_logout_deletes_config_when_it_only_holds_the_token(
+    cli_runner: CliRunner,
+    httpx_mock: HTTPXMock,
+    mock_home: pathlib.Path,
+    mock_config: Config,
+):
+    _mock_revoke(httpx_mock, mock_config.access_token.token, 204)
+    config_path = mock_home / ".beanhub" / "config.toml"
+    assert config_path.exists()
+    cli_runner.mix_stderr = False
+    result = cli_runner.invoke(cli, ["logout"])
+    assert result.exit_code == 0
+    assert not config_path.exists()
+    assert load_config() is None
+
+
+@pytest.mark.parametrize(
+    "status_code, message",
+    [
+        (401, "invalid"),
+        (404, "stops working"),
+    ],
+)
+def test_logout_drops_local_token_when_revoke_cannot_succeed(
+    cli_runner: CliRunner,
+    httpx_mock: HTTPXMock,
+    mock_config: Config,
+    status_code: int,
+    message: str,
+):
+    _mock_revoke(httpx_mock, mock_config.access_token.token, status_code)
+    cli_runner.mix_stderr = False
+    result = cli_runner.invoke(cli, ["logout"])
+    assert result.exit_code == 0
+    assert message in result.stderr
+    config = load_config()
+    assert config.access_token is None
+    assert config.repo.default == mock_config.repo.default
+
+
+def test_logout_keeps_login_when_revoke_fails(
+    cli_runner: CliRunner,
+    httpx_mock: HTTPXMock,
+    mock_config: Config,
+):
+    token = mock_config.access_token.token
+    _mock_revoke(httpx_mock, token, 500)
+    cli_runner.mix_stderr = False
+    result = cli_runner.invoke(cli, ["logout"])
+    assert result.exit_code == -1
+    assert "still logged in" in result.stderr
+    assert load_config().access_token.token == token
+
+
+def test_logout_keeps_login_when_bean_hub_is_unreachable(
+    cli_runner: CliRunner,
+    httpx_mock: HTTPXMock,
+    mock_config: Config,
+):
+    token = mock_config.access_token.token
+    httpx_mock.add_exception(httpx.ConnectError("offline"))
+    cli_runner.mix_stderr = False
+    result = cli_runner.invoke(cli, ["logout"])
+    assert result.exit_code == -1
+    assert "still logged in" in result.stderr
+    assert load_config().access_token.token == token
+
+
+def test_logout_when_not_logged_in(
+    cli_runner: CliRunner,
+    httpx_mock: HTTPXMock,
+    mock_home: pathlib.Path,
+):
+    _ = mock_home
+    _ = httpx_mock
+    cli_runner.mix_stderr = False
+    result = cli_runner.invoke(cli, ["logout"])
+    assert result.exit_code == 0
+    assert "Not logged in" in result.stderr
+    assert load_config() is None
